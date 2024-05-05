@@ -1,7 +1,7 @@
 package tfc.renirol.frontend.hardware.util;
 
 import tfc.renirol.frontend.hardware.device.ReniHardwareDevice;
-import tfc.renirol.frontend.hardware.device.ReniVendor;
+import tfc.renirol.frontend.hardware.device.Vendors;
 import tfc.renirol.frontend.hardware.device.support.ReniDeviceType;
 import tfc.renirol.util.Pair;
 
@@ -115,9 +115,9 @@ public class DeviceQuery {
     }
 
     DeviceFilter priorityB = (dev) -> true;
-    public DeviceQuery favorBrands(ReniVendor... reniVendors) {
+    public DeviceQuery favorBrands(Vendors... reniVendors) {
         priorityB = (SoftRequisite) (dev) -> {
-            for (ReniVendor reniVendor : reniVendors) {
+            for (Vendors reniVendor : reniVendors) {
                 if (reniVendor.equals(dev.information.getVendorEnum())) {
                     return true;
                 }

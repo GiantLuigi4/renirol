@@ -3,7 +3,7 @@ package tfc.renirol.frontend.hardware.device.support;
 import org.lwjgl.vulkan.VK13;
 import org.lwjgl.vulkan.VkPhysicalDeviceProperties;
 import tfc.renirol.backend.vk.util.VkUtil;
-import tfc.renirol.frontend.hardware.device.ReniVendor;
+import tfc.renirol.frontend.hardware.device.Vendors;
 
 public class ReniDeviceInformation {
     final VkPhysicalDeviceProperties properties;
@@ -25,19 +25,19 @@ public class ReniDeviceInformation {
     }
 
     public String getVendorName() {
-        ReniVendor vendor = getVendorEnum();
-        if (vendor == ReniVendor.UNKNOWN)
+        Vendors vendor = getVendorEnum();
+        if (vendor == Vendors.UNKNOWN)
             return VkUtil.find(VK13.class, "VK_VENDOR_ID_", properties.vendorID());
         return vendor.name;
     }
 
-    public ReniVendor getVendorEnum() {
+    public Vendors getVendorEnum() {
         int id = properties.vendorID();
-        for (ReniVendor value : ReniVendor.values()) {
+        for (Vendors value : Vendors.values()) {
             if (value.matches(id)) {
                 return value;
             }
         }
-        return ReniVendor.UNKNOWN;
+        return Vendors.UNKNOWN;
     }
 }

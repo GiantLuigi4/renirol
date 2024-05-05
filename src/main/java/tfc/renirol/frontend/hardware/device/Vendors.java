@@ -2,7 +2,7 @@ package tfc.renirol.frontend.hardware.device;
 
 // reference: https://www.pcilookup.com/
 // reference: https://pcisig.com/membership/member-companies
-public enum ReniVendor {
+public enum Vendors {
     NVIDIA("NVidia Corporation", 4318),
     AMD("Advanced Micro Devices, Inc.", new int[]{4130, 4098}),
     APPLE("Apple Computer", 4203),
@@ -14,12 +14,12 @@ public enum ReniVendor {
     public final String name;
     private final int[] ids;
 
-    ReniVendor(String name, int[] ids) {
+    Vendors(String name, int[] ids) {
         this.name = name;
         this.ids = ids;
     }
 
-    ReniVendor(String name, int ids) {
+    Vendors(String name, int ids) {
         this.name = name;
         this.ids = new int[]{ids};
     }
