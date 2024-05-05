@@ -1,0 +1,66 @@
+// https://docs.gradle.org/current/userguide/cpp_library_plugin.html
+
+plugins {
+    id 'cpp-library'
+}
+version = '1.2.1'
+
+library {
+    linkage = [Linkage.SHARED]
+
+    targetMachines = [
+            machines.windows.x86,
+            machines.windows.x86_64,
+    ]
+
+    source.from file('src/main/cpp/win')
+    source.from file('src/main/cpp/reni')
+    privateHeaders.from file('src/main/h')
+    privateHeaders.from file('src/main/h/win')
+    privateHeaders.from file('src/main/h/reni')
+    publicHeaders.from file('src/main/include/jni')
+    publicHeaders.from file('src/main/include/jni/win32')
+    publicHeaders.from file('src/main/include/jni/win32/bridge')
+
+    baseName = "renirol-natives"
+}
+
+tasks.register("build_release") {
+    tasks.compileReleaseX86Cpp.doLast {library.baseName = "renirol-natives-x86"}
+    tasks.named("compileReleaseX86-64Cpp").get().doLast {library.baseName = "renirol-natives-x86-64"}
+
+    tasks.build_release.finalizedBy(tasks.named("compileReleaseX86Cpp").get())
+    tasks.build_release.finalizedBy(tasks.named("assembleReleaseX86").get())
+    tasks.build_release.finalizedBy(tasks.named("linkReleaseX86").get())
+    tasks.build_release.finalizedBy(tasks.named("compileReleaseX86-64Cpp").get())
+    tasks.build_release.finalizedBy(tasks.named("assembleReleaseX86-64").get())
+    tasks.build_release.finalizedBy(tasks.named("linkReleaseX86-64").get())
+    tasks.build_release.group("build")
+}
+
+tasks.withType(CppCompile).configureEach {
+    // Define a preprocessor macro for every binary
+    macros.put("NDEBUG", null)
+
+    // Define a compiler options
+    compilerArgs.add '-W4'
+    compilerArgs.add '/O2'
+    compilerArgs.add '/GL'
+    compilerArgs.add '/Gw'
+    compilerArgs.add '/Gr'
+    compilerArgs.add '/GF'
+    compilerArgs.add '/Gy'
+
+    // Define toolchain-specific compiler options
+    compilerArgs.addAll toolChain.map { toolChain ->
+        System.out.println(toolChain.getName())
+        if (toolChain in [Gcc, Clang]) {
+            return ['-O3', '-fno-access-control']
+        } else if (toolChain in VisualCpp) {
+//            return ['/Zi /O2 /Ot /Oi /Og /Gw /Gy /GL /GF /Gr /W4 /Zl']
+//            return ['/Zi /O2 /Ot /Oi /Og /Gw /Gy /GL /GF /Gr']
+            return ['/Zi']
+        }
+        return []
+    }
+}

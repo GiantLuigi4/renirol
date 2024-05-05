@@ -1,0 +1,21 @@
+package tfc.renirol.frontend.rendering.enums.flags;
+
+import org.lwjgl.vulkan.VK13;
+
+public enum ShaderStageFlags {
+    VERTEX(VK13.VK_SHADER_STAGE_VERTEX_BIT),
+    FRAGMENT(VK13.VK_SHADER_STAGE_FRAGMENT_BIT),
+    COMPUTE(VK13.VK_SHADER_STAGE_COMPUTE_BIT),
+    GEOMETRY(VK13.VK_SHADER_STAGE_GEOMETRY_BIT),
+    TESSELATION_CONTROL(VK13.VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT),
+    TESSELATION_EVALUATION(VK13.VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT),
+    ALL_GRAPHICS(VK13.VK_SHADER_STAGE_ALL_GRAPHICS),
+    ALL(VK13.VK_SHADER_STAGE_ALL),
+    ;
+
+    public final int bits;
+
+    ShaderStageFlags(int bits) {
+        this.bits = bits;
+    }
+}

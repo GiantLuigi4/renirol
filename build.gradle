@@ -1,0 +1,86 @@
+plugins {
+    id 'application'
+    id 'java'
+}
+
+group = 'tfc'
+version = '1.0-SNAPSHOT'
+
+project.ext.lwjglVersion = "3.3.3"
+project.ext.lwjglNatives = "natives-windows"
+
+repositories {
+    mavenCentral()
+}
+
+project.ext.jomlVersion = "1.10.5"
+project.ext.joml_primitivesVersion = "1.10.0"
+project.ext.steamworks4jVersion = "1.9.0"
+project.ext.steamworks4j_serverVersion = "1.9.0"
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.9.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
+
+    // cores
+    implementation "org.lwjgl:lwjgl"
+    runtimeOnly "org.lwjgl:lwjgl::$lwjglNatives"
+
+    // graphics
+    implementation "org.lwjgl:lwjgl-shaderc"
+    runtimeOnly "org.lwjgl:lwjgl-shaderc::$lwjglNatives"
+    implementation "org.lwjgl:lwjgl-vulkan"
+    implementation "org.lwjgl:lwjgl-vma"
+    runtimeOnly "org.lwjgl:lwjgl-vma::$lwjglNatives"
+
+    // windowing
+    implementation "org.lwjgl:lwjgl-glfw"
+    runtimeOnly "org.lwjgl:lwjgl-glfw::$lwjglNatives"
+
+    // compute
+    implementation "org.lwjgl:lwjgl-opencl"
+    implementation "org.lwjgl:lwjgl-cuda"
+
+    // file
+    implementation "org.lwjgl:lwjgl-nfd"
+    runtimeOnly "org.lwjgl:lwjgl-nfd::$lwjglNatives"
+
+    // image
+    implementation "org.lwjgl:lwjgl-stb"
+    runtimeOnly "org.lwjgl:lwjgl-stb::$lwjglNatives"
+
+    // font
+    implementation "org.lwjgl:lwjgl-freetype"
+    runtimeOnly "org.lwjgl:lwjgl-freetype::$lwjglNatives"
+
+    // mesh
+    implementation "org.lwjgl:lwjgl-meshoptimizer"
+    runtimeOnly "org.lwjgl:lwjgl-meshoptimizer::$lwjglNatives"
+
+    // audio
+    implementation "org.lwjgl:lwjgl-opus"
+    runtimeOnly "org.lwjgl:lwjgl-opus::$lwjglNatives"
+    implementation "org.lwjgl:lwjgl-openal"
+    runtimeOnly "org.lwjgl:lwjgl-openal::$lwjglNatives"
+
+    // optimization
+    implementation "org.lwjgl:lwjgl-tootle"
+    runtimeOnly "org.lwjgl:lwjgl-tootle::$lwjglNatives"
+
+    // math
+    implementation "org.joml:joml:${jomlVersion}"
+    implementation "org.joml:joml-primitives:${joml_primitivesVersion}"
+    implementation "com.code-disaster.steamworks4j:steamworks4j:${steamworks4jVersion}"
+    implementation "com.code-disaster.steamworks4j:steamworks4j-server:${steamworks4j_serverVersion}"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+task runApp(type:JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    main = "tfc.test.Main"
+}

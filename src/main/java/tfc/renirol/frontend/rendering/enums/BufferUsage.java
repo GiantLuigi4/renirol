@@ -1,0 +1,19 @@
+package tfc.renirol.frontend.rendering.enums;
+
+import org.lwjgl.vulkan.VK13;
+
+public enum BufferUsage {
+    VERTEX(VK13.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
+    INDEX(VK13.VK_BUFFER_USAGE_INDEX_BUFFER_BIT),
+    INDIRECT(VK13.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT),
+    STORAGE(VK13.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+    UNIFORM(VK13.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT),
+    TRANSFER_SRC(VK13.VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
+    TRANSFER_DST(VK13.VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+    public final int id;
+
+    BufferUsage(int id) {
+        this.id = id;
+    }
+}
