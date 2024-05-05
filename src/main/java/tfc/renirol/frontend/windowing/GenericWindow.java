@@ -31,4 +31,6 @@ public abstract class GenericWindow {
     public abstract long handle();
 
     public abstract void setName(String name);
+
+    public abstract ReniContext getContext();
 }

@@ -381,4 +381,8 @@ public class CommandBuffer implements ReniDestructable {
         );
         regions.free();
     }
+
+    public <T> T getDirect(Class<T> clazz) {
+        return (T) cmd;
+    }
 }

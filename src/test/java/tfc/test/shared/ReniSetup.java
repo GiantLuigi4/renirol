@@ -24,7 +24,7 @@ public class ReniSetup {
 
     static {
         Setup.performanceSetup();
-//        Setup.loadRenderdoc();
+        Setup.loadRenderdoc();
         if (!Renirol.BACKEND.equals("OpenGL"))
             Setup.noAPI();
         WINDOW = Scenario.useWinNT ? new WinNTWindow(
@@ -97,10 +97,9 @@ public class ReniSetup {
 
     public static final FormatSelector selector = new FormatSelector()
             .channels(
-                    // favor 10-bit color depth if possible, elsewise go for more standard bit depths
-                    new ChannelInfo('r', 10, 8, 16, 32),
-                    new ChannelInfo('g', 10, 8, 16, 32),
-                    new ChannelInfo('b', 10, 8, 16, 32)
+                    new ChannelInfo('r', 8, 16, 32),
+                    new ChannelInfo('g', 8, 16, 32),
+                    new ChannelInfo('b', 8, 16, 32)
             )
             .type("SRGB");
 

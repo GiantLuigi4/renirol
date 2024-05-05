@@ -44,4 +44,20 @@ public class DescriptorSet {
         info.free();
         writeDescriptorSet.free();
     }
+
+    public void bind(int binding, int resourceId, DescriptorType type, ImageInfo buffer) {
+        VkWriteDescriptorSet.Buffer writeDescriptorSet = VkWriteDescriptorSet.calloc(1);
+        writeDescriptorSet.sType(VK13.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+        VkDescriptorImageInfo.Buffer info = VkDescriptorImageInfo.calloc(1);
+        info.put(0, buffer.getHandle());
+        writeDescriptorSet.pImageInfo(info)
+                .descriptorCount(1)
+                .descriptorType(type.id)
+                .dstSet(handle)
+                .dstBinding(binding)
+                .dstArrayElement(resourceId);
+        VK13.vkUpdateDescriptorSets(device, writeDescriptorSet, null);
+        info.free();
+        writeDescriptorSet.free();
+    }
 }

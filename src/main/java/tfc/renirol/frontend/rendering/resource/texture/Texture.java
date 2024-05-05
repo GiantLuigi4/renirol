@@ -62,78 +62,13 @@ public class Texture {
         create(surface, device);
     }
 
-    int[] validFormats() {
-        return switch (channels) {
-            case RGB -> new int[]{
-                    VK13.VK_FORMAT_R8G8B8_SINT,
-                    VK13.VK_FORMAT_R8G8B8_UINT,
-                    VK13.VK_FORMAT_R8G8B8_SRGB,
-                    VK13.VK_FORMAT_R8G8B8_UNORM,
-                    VK13.VK_FORMAT_R8G8B8_SNORM,
-                    VK13.VK_FORMAT_R8G8B8_USCALED,
-                    VK13.VK_FORMAT_R8G8B8_SSCALED,
-
-                    VK13.VK_FORMAT_R16G16B16_SINT,
-                    VK13.VK_FORMAT_R16G16B16_UINT,
-                    VK13.VK_FORMAT_R16G16B16_UNORM,
-                    VK13.VK_FORMAT_R16G16B16_SNORM,
-                    VK13.VK_FORMAT_R16G16B16_USCALED,
-                    VK13.VK_FORMAT_R16G16B16_SSCALED,
-            };
-            case RGBA -> new int[]{
-                    VK13.VK_FORMAT_R8G8B8A8_SINT,
-                    VK13.VK_FORMAT_R8G8B8A8_UINT,
-                    VK13.VK_FORMAT_R8G8B8A8_SRGB,
-                    VK13.VK_FORMAT_R8G8B8A8_UNORM,
-                    VK13.VK_FORMAT_R8G8B8A8_SNORM,
-                    VK13.VK_FORMAT_R8G8B8A8_USCALED,
-                    VK13.VK_FORMAT_R8G8B8A8_SSCALED,
-
-                    VK13.VK_FORMAT_R16G16B16A16_SINT,
-                    VK13.VK_FORMAT_R16G16B16A16_UINT,
-                    VK13.VK_FORMAT_R16G16B16A16_UNORM,
-                    VK13.VK_FORMAT_R16G16B16A16_SNORM,
-                    VK13.VK_FORMAT_R16G16B16A16_USCALED,
-                    VK13.VK_FORMAT_R16G16B16A16_SSCALED,
-            };
-
-            default -> throw new RuntimeException("NYI!");
-        };
-    }
-
     long memory = 0;
 
     protected void create(long surface, ReniLogicalDevice device) {
         VkImageCreateInfo imageInfo = VkImageCreateInfo.calloc();
         imageInfo.sType(VK13.VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
         imageInfo.imageType(VK13.VK_IMAGE_TYPE_2D);
-        FormatSelector selector = new FormatSelector();
-        int depth = switch (bitDepth) {
-            case DEPTH_8 -> 8;
-            case DEPTH_16 -> 16;
-        };
-        switch (channels) {
-            case R -> selector.channels(new ChannelInfo('r', depth));
-            case RG -> selector.channels(
-                    new ChannelInfo('r', depth),
-                    new ChannelInfo('g', depth)
-            );
-            case RGB -> selector.channels(
-                    new ChannelInfo('r', depth),
-                    new ChannelInfo('g', depth),
-                    new ChannelInfo('b', depth)
-            );
-            case RGBA -> selector.channels(
-                    new ChannelInfo('r', depth),
-                    new ChannelInfo('g', depth),
-                    new ChannelInfo('b', depth),
-                    new ChannelInfo('a', depth)
-            );
-        }
-        selector.type("SRGB");
-        ReniImageCapabilities capabilities = device.hardware.features.image(surface);
-        imageInfo.format(selector.select(capabilities).format());
-        capabilities.destroy();
+        imageInfo.format(VK13.VK_FORMAT_R8G8B8A8_SRGB);
         imageInfo.extent().width(width);
         imageInfo.extent().height(height);
         imageInfo.extent().depth(1);
@@ -169,36 +104,35 @@ public class Texture {
                 device, ReniQueueType.GRAPHICS,
                 true, false
         );
+        VK13.vkBindImageMemory(device.getDirect(VkDevice.class), handle, memory, 0);
         {
             buffer.begin();
-            GPUBuffer buffer1 = new GPUBuffer(
-                    device,
-                    BufferUsage.TRANSFER_DST,
-                    memory,
-                    memRequirements.size()
+
+            VkBufferImageCopy.Buffer inf = VkBufferImageCopy.calloc(1);
+            VkExtent3D extent2D = VkExtent3D.calloc();
+            extent2D.set(width, height, 1);
+            inf.bufferImageHeight(height);
+            inf.bufferRowLength(width);
+            inf.imageExtent(extent2D);
+            inf.imageSubresource().layerCount(1);
+            inf.imageSubresource().aspectMask(VK13.VK_IMAGE_ASPECT_COLOR_BIT);
+            VK13.vkCmdCopyBufferToImage(
+                    buffer.getDirect(VkCommandBuffer.class),
+                    data.getHandle(),
+                    handle, VK13.VK_IMAGE_LAYOUT_GENERAL,
+                    inf
             );
-            buffer.copy(data, 0, buffer1, 0, data.getSize());
+            extent2D.free();
+            inf.free();
+
             buffer.end();
             buffer.submit(device.getStandardQueue(ReniQueueType.GRAPHICS));
-            buffer1.destroyBuffer();
+            // must wait for idle to destroy buffer
+            device.waitForIdle();
+            buffer.destroy();
+
+            data.destroy();
         }
-
-        VK13.vkBindImageMemory(device.getDirect(VkDevice.class), handle, memory, 0);
-
-        buffer.begin();
-        buffer.transition(
-                handle,
-                StageMask.TRANSFER,
-                StageMask.GRAPHICS,
-                ImageLayout.UNDEFINED,
-                ImageLayout.GENERAL
-        );
-        buffer.end();
-        buffer.submit(device.getStandardQueue(ReniQueueType.GRAPHICS));
-
-        device.waitForIdle();
-
-        buffer.destroy();
 
         // image view&sampler
         {
@@ -208,9 +142,9 @@ public class Texture {
             info.magFilter(VK13.VK_FILTER_LINEAR);
             info.minFilter(VK13.VK_FILTER_LINEAR);
 
-            info.addressModeU(VK13.VK_SAMPLER_ADDRESS_MODE_REPEAT);
-            info.addressModeV(VK13.VK_SAMPLER_ADDRESS_MODE_REPEAT);
-            info.addressModeW(VK13.VK_SAMPLER_ADDRESS_MODE_REPEAT);
+            info.addressModeU(VK13.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+            info.addressModeV(VK13.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+            info.addressModeW(VK13.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 
             info.maxAnisotropy(1.0f);
 
@@ -230,6 +164,19 @@ public class Texture {
             sampler = VkUtil.getCheckedLong(buf -> VK13.vkCreateSampler(device.getDirect(VkDevice.class), info, null, buf));
 
             info.free();
+
+            VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc();
+            viewInfo.sType(VK13.VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+            viewInfo.image(handle);
+            viewInfo.viewType(VK13.VK_IMAGE_VIEW_TYPE_2D);
+            viewInfo.format(VK13.VK_FORMAT_R8G8B8A8_SRGB);
+            viewInfo.subresourceRange().aspectMask(VK13.VK_IMAGE_ASPECT_COLOR_BIT);
+            viewInfo.subresourceRange().baseMipLevel(0);
+            viewInfo.subresourceRange().levelCount(1);
+            viewInfo.subresourceRange().baseArrayLayer(0);
+            viewInfo.subresourceRange().layerCount(1);
+            view = VkUtil.getCheckedLong(buf -> VK13.nvkCreateImageView(device.getDirect(VkDevice.class), viewInfo.address(), 0, MemoryUtil.memAddress(buf)));
+            viewInfo.free();
         }
     }
 
@@ -238,7 +185,6 @@ public class Texture {
     }
 
     protected GPUBuffer loadStb(ReniLogicalDevice device, TextureFormat format, TextureChannels channels, BitDepth depth, ByteBuffer data) {
-
         IntBuffer width = MemoryUtil.memAllocInt(1);
         IntBuffer height = MemoryUtil.memAllocInt(1);
 
@@ -290,5 +236,9 @@ public class Texture {
 
     public long getHandle() {
         return handle;
+    }
+
+    public long getView() {
+        return view;
     }
 }

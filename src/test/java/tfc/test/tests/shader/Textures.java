@@ -24,10 +24,7 @@ import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
 import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
 import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
 import tfc.renirol.frontend.rendering.resource.buffer.DataFormat;
-import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorLayout;
-import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorLayoutInfo;
-import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorPool;
-import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorSet;
+import tfc.renirol.frontend.rendering.resource.descriptor.*;
 import tfc.renirol.frontend.rendering.resource.texture.Texture;
 import tfc.renirol.frontend.windowing.glfw.GLFWWindow;
 import tfc.renirol.util.ShaderCompiler;
@@ -97,7 +94,7 @@ public class Textures {
         DescriptorLayout layout;
         {
             final DescriptorLayoutInfo info = new DescriptorLayoutInfo(
-                    0, DescriptorType.UNIFORM_BUFFER,
+                    0, DescriptorType.COMBINED_SAMPLED_IMAGE,
                     1, ShaderStageFlags.FRAGMENT
             );
 
@@ -114,18 +111,6 @@ public class Textures {
         );
         state.descriptorLayouts(layout);
 
-        DataFormat uniformFormat = new DataFormat(VertexElements.ID);
-        BufferDescriptor descriptor = new BufferDescriptor(uniformFormat);
-        GPUBuffer uniformBuffer = new GPUBuffer(
-                ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                descriptor, BufferUsage.UNIFORM,
-                1
-        );
-        uniformBuffer.allocate();
-        set.bind(0, 0, DescriptorType.UNIFORM_BUFFER, uniformBuffer);
-
-        GraphicsPipeline pipeline0 = new GraphicsPipeline(state, pass, VERT, FRAG);
-
         final GPUBuffer vbo = new GPUBuffer(ReniSetup.GRAPHICS_CONTEXT.getLogical(), desc0, BufferUsage.VERTEX, 4);
         final GPUBuffer ibo = new GPUBuffer(ReniSetup.GRAPHICS_CONTEXT.getLogical(), IndexSize.INDEX_16, BufferUsage.INDEX, 6);
         vbo.allocate();
@@ -139,8 +124,6 @@ public class Textures {
         ibo.upload(0, indices);
         MemoryUtil.memFree(indices);
 
-        ByteBuffer uniformBBuf = uniformBuffer.createByteBuf();
-
         InputStream is = Textures.class.getClassLoader().getResourceAsStream("test/texture/image.png");
         Texture texture = new Texture(
                 ReniSetup.GRAPHICS_CONTEXT.getSurface(),
@@ -148,6 +131,11 @@ public class Textures {
                 TextureFormat.PNG, TextureChannels.RGBA,
                 BitDepth.DEPTH_8, is
         );
+        ImageInfo info = new ImageInfo(texture);
+        set.bind(0, 0, DescriptorType.COMBINED_SAMPLED_IMAGE, info);
+
+        GraphicsPipeline pipeline0 = new GraphicsPipeline(state, pass, VERT, FRAG);
+
         try {
             is.close();
         } catch (Throwable ignored) {
@@ -167,10 +155,6 @@ public class Textures {
             while (!ReniSetup.WINDOW.shouldClose()) {
                 frame++;
 
-                {
-                    uniformBBuf.position(0).asIntBuffer().put(new int[]{(int) texture.getSampler()});
-                    uniformBuffer.upload(0, uniformBBuf);
-                }
                 {
                     final FloatBuffer fb = buffer1.position(0).asFloatBuffer();
                     fb.put(

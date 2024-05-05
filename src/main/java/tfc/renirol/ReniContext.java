@@ -7,6 +7,7 @@ import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
+import tfc.renirol.frontend.hardware.device.support.image.ReniImageCapabilities;
 import tfc.renirol.frontend.hardware.util.DeviceQuery;
 import tfc.renirol.frontend.hardware.device.ReniHardwareDevice;
 import tfc.renirol.frontend.hardware.util.ReniDestructable;

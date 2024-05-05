@@ -159,4 +159,9 @@ public class GLFWWindow extends GenericWindow {
     public void setName(String name) {
         GLFW.glfwSetWindowTitle(handle, name);
     }
+
+    @Override
+    public ReniContext getContext() {
+        return context;
+    }
 }

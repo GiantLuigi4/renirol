@@ -146,4 +146,9 @@ public class WinNTWindow extends GenericWindow {
     public void freeMouse() {
         ReniUser32.ReleaseCapture();
     }
+
+    @Override
+    public ReniContext getContext() {
+        return context;
+    }
 }

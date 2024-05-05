@@ -126,6 +126,7 @@ public class SwapChain implements ReniDestructable {
                 if (graphics != transfer)
                     MemoryUtil.memFree(indicesBuf);
                 createInfo.free();
+                image.destroy();
 
                 throw err;
             }
