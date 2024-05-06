@@ -8,6 +8,7 @@ import tfc.renirol.frontend.rendering.enums.masks.DynamicStateMasks;
 import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
 import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorLayout;
 
+import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
 
@@ -110,7 +111,7 @@ public class PipelineState {
         // color blend
         colorBlending.sType(VK10.VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
         colorBlending.logicOpEnable(false);
-        colorBlending.logicOp(VK10.VK_LOGIC_OP_COPY); // Optional
+        colorBlending.logicOp(VK_LOGIC_OP_COPY); // Optional
         colorBlending.attachmentCount(1);
         colorBlending.pAttachments(colorBlendAttachment);
         colorBlending.blendConstants().put(0, 0.0f); // Optional
@@ -125,6 +126,28 @@ public class PipelineState {
         pipelineLayoutInfo.setLayoutCount(0); // Optional
         pipelineLayoutInfo.pSetLayouts(null); // Optional
         pipelineLayoutInfo.pPushConstantRanges(null); // Optional
+    }
+
+    public void alphaBlending() {
+        colorBlendAttachment.colorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+        colorBlendAttachment.blendEnable(true);
+        colorBlendAttachment.srcColorBlendFactor(VK_BLEND_FACTOR_SRC_ALPHA);
+        colorBlendAttachment.dstColorBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);
+        colorBlendAttachment.colorBlendOp(VK_BLEND_OP_ADD);
+        colorBlendAttachment.srcAlphaBlendFactor(VK_BLEND_FACTOR_ONE);
+        colorBlendAttachment.dstAlphaBlendFactor(VK_BLEND_FACTOR_ZERO);
+        colorBlendAttachment.alphaBlendOp(VK_BLEND_OP_ADD);
+    }
+
+    public void additiveBlending() {
+        colorBlendAttachment.colorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+        colorBlendAttachment.blendEnable(true);
+        colorBlendAttachment.srcColorBlendFactor(VK_BLEND_FACTOR_ONE);
+        colorBlendAttachment.dstColorBlendFactor(VK_BLEND_FACTOR_DST_ALPHA);
+        colorBlendAttachment.colorBlendOp(VK_BLEND_OP_ADD);
+        colorBlendAttachment.srcAlphaBlendFactor(VK_BLEND_FACTOR_ONE);
+        colorBlendAttachment.dstAlphaBlendFactor(VK_BLEND_FACTOR_ZERO);
+        colorBlendAttachment.alphaBlendOp(VK_BLEND_OP_ADD);
     }
 
     LongBuffer layoutDescBuffer = MemoryUtil.memAllocLong(1);
@@ -164,8 +187,14 @@ public class PipelineState {
         ), device);
     }
 
+    IntBuffer dynamicBuffer;
+
     public void dynamicState(DynamicStateMasks... states) {
-        // TODO
+        if (dynamicBuffer != null) MemoryUtil.memFree(dynamicBuffer);
+        dynamicBuffer = MemoryUtil.memAllocInt(states.length);
+        for (int i = 0; i < states.length; i++)
+            dynamicBuffer.put(i, states[i].bits);
+        dynamic.pDynamicStates(dynamicBuffer);
     }
 
     VkVertexInputBindingDescription.Buffer bindings = VkVertexInputBindingDescription.malloc(0);

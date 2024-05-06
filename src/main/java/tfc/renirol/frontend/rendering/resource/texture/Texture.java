@@ -1,23 +1,21 @@
 package tfc.renirol.frontend.rendering.resource.texture;
 
-import org.lwjgl.PointerBuffer;
 import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
-import tfc.renirol.frontend.hardware.device.support.image.ReniImageCapabilities;
+import tfc.renirol.frontend.hardware.util.ReniDestructable;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.enums.BufferUsage;
-import tfc.renirol.frontend.rendering.enums.ImageLayout;
 import tfc.renirol.frontend.rendering.enums.format.BitDepth;
 import tfc.renirol.frontend.rendering.enums.format.TextureChannels;
 import tfc.renirol.frontend.rendering.enums.format.TextureFormat;
-import tfc.renirol.frontend.rendering.enums.masks.StageMask;
+import tfc.renirol.frontend.rendering.enums.modes.image.FilterMode;
+import tfc.renirol.frontend.rendering.enums.modes.image.MipmapMode;
+import tfc.renirol.frontend.rendering.enums.modes.image.WrapMode;
 import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
-import tfc.renirol.frontend.rendering.selectors.ChannelInfo;
-import tfc.renirol.frontend.rendering.selectors.FormatSelector;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -26,8 +24,12 @@ import java.nio.ShortBuffer;
 
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 
-public class Texture {
-    public Texture(long surface, ReniLogicalDevice device, TextureFormat format, TextureChannels channels, BitDepth depth, InputStream data) {
+public class Texture implements ReniDestructable {
+    final VkDevice device;
+
+    public Texture(ReniLogicalDevice device, TextureFormat format, TextureChannels channels, BitDepth depth, InputStream data) {
+        this.device = device.getDirect(VkDevice.class);
+
         this.channels = channels;
         this.bitDepth = depth;
         ByteBuffer buffer = VkUtil.read(data);
@@ -38,7 +40,7 @@ public class Texture {
             default -> throw new RuntimeException("Unsupported texture format " + format.name());
         }
         MemoryUtil.memFree(buffer);
-        create(surface, device);
+        create(device);
     }
 
     private final GPUBuffer data;
@@ -48,9 +50,10 @@ public class Texture {
 
     private long handle;
     private long view;
-    private long sampler;
 
-    public Texture(long surface, ReniLogicalDevice device, TextureFormat format, TextureChannels channels, BitDepth depth, ByteBuffer data) {
+    public Texture(ReniLogicalDevice device, TextureFormat format, TextureChannels channels, BitDepth depth, ByteBuffer data) {
+        this.device = device.getDirect(VkDevice.class);
+
         this.channels = channels;
         this.bitDepth = depth;
         switch (format) {
@@ -59,12 +62,12 @@ public class Texture {
             }
             default -> throw new RuntimeException("Unsupported texture format " + format.name());
         }
-        create(surface, device);
+        create(device);
     }
 
     long memory = 0;
 
-    protected void create(long surface, ReniLogicalDevice device) {
+    protected void create(ReniLogicalDevice device) {
         VkImageCreateInfo imageInfo = VkImageCreateInfo.calloc();
         imageInfo.sType(VK13.VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
         imageInfo.imageType(VK13.VK_IMAGE_TYPE_2D);
@@ -119,7 +122,7 @@ public class Texture {
             VK13.vkCmdCopyBufferToImage(
                     buffer.getDirect(VkCommandBuffer.class),
                     data.getHandle(),
-                    handle, VK13.VK_IMAGE_LAYOUT_GENERAL,
+                    handle, VK13.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     inf
             );
             extent2D.free();
@@ -136,35 +139,6 @@ public class Texture {
 
         // image view&sampler
         {
-            VkSamplerCreateInfo info = VkSamplerCreateInfo.calloc();
-
-            info.sType(VK13.VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
-            info.magFilter(VK13.VK_FILTER_LINEAR);
-            info.minFilter(VK13.VK_FILTER_LINEAR);
-
-            info.addressModeU(VK13.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
-            info.addressModeV(VK13.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
-            info.addressModeW(VK13.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
-
-            info.maxAnisotropy(1.0f);
-
-            info.borderColor(VK13.VK_BORDER_COLOR_INT_OPAQUE_BLACK);
-
-            info.unnormalizedCoordinates(false);
-
-            info.compareEnable(false);
-            info.compareOp(VK13.VK_COMPARE_OP_ALWAYS);
-
-            info.mipmapMode(VK13.VK_SAMPLER_MIPMAP_MODE_NEAREST);
-
-            info.mipLodBias(0.0f);
-            info.minLod(0.0f);
-            info.maxLod(0.0f);
-
-            sampler = VkUtil.getCheckedLong(buf -> VK13.vkCreateSampler(device.getDirect(VkDevice.class), info, null, buf));
-
-            info.free();
-
             VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc();
             viewInfo.sType(VK13.VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
             viewInfo.image(handle);
@@ -180,8 +154,46 @@ public class Texture {
         }
     }
 
-    public long getSampler() {
-        return sampler;
+    public TextureSampler createSampler(
+            WrapMode xWrap,
+            WrapMode yWrap,
+            FilterMode min,
+            FilterMode mag,
+            MipmapMode mips,
+            boolean useAnisotropy, float anisotropy,
+            float lodBias, float minLod, float maxLod
+    ) {
+        VkSamplerCreateInfo info = VkSamplerCreateInfo.calloc();
+
+        info.sType(VK13.VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
+        info.magFilter(mag.id);
+        info.minFilter(min.id);
+
+        info.addressModeU(xWrap.id);
+        info.addressModeV(yWrap.id);
+        info.addressModeW(VK13.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+
+        info.anisotropyEnable(useAnisotropy);
+        info.maxAnisotropy(anisotropy);
+
+        info.borderColor(VK13.VK_BORDER_COLOR_INT_OPAQUE_BLACK);
+
+        info.unnormalizedCoordinates(false);
+
+        info.compareEnable(false);
+        info.compareOp(VK13.VK_COMPARE_OP_ALWAYS);
+
+        info.mipmapMode(mips.id);
+
+        info.mipLodBias(lodBias);
+        info.minLod(minLod);
+        info.maxLod(maxLod);
+
+        long sampler = VkUtil.getCheckedLong(buf -> VK13.vkCreateSampler(device, info, null, buf));
+
+        info.free();
+
+        return new TextureSampler(sampler, device);
     }
 
     protected GPUBuffer loadStb(ReniLogicalDevice device, TextureFormat format, TextureChannels channels, BitDepth depth, ByteBuffer data) {
@@ -214,9 +226,6 @@ public class Texture {
         MemoryUtil.memFree(height);
         MemoryUtil.memFree(pChannels);
 
-//        int size = wV * hV;
-//        GPUBuffer buffer1 = new GPUBuffer(device, BufferUsage.TRANSFER_SRC, channelCount * depth.size * size);
-
         GPUBuffer buffer1 = new GPUBuffer(device, BufferUsage.TRANSFER_SRC, buffer.capacity());
         buffer1.allocate();
         buffer1.upload(0, buffer);
@@ -240,5 +249,12 @@ public class Texture {
 
     public long getView() {
         return view;
+    }
+
+    @Override
+    public void destroy() {
+        VK13.nvkDestroyImageView(device, view, 0);
+        VK13.nvkDestroyImage(device, handle, 0);
+        VK13.nvkFreeMemory(device, memory, 0);
     }
 }

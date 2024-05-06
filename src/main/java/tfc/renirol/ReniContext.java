@@ -78,7 +78,7 @@ public class ReniContext implements ReniDestructable {
         info.applicationVersion(appVer);
         info.pEngineName(engine);
         info.engineVersion(engineVer);
-        info.apiVersion(VK13.VK_MAKE_API_VERSION(0, 2, 8, 0));
+        info.apiVersion(VK13.VK_MAKE_API_VERSION(0, 1, 3, 0));
 
         VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.calloc();
         createInfo.sType(VK10.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO);

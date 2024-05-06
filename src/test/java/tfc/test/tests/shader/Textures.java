@@ -18,7 +18,11 @@ import tfc.renirol.frontend.rendering.enums.format.AttributeFormat;
 import tfc.renirol.frontend.rendering.enums.format.BitDepth;
 import tfc.renirol.frontend.rendering.enums.format.TextureChannels;
 import tfc.renirol.frontend.rendering.enums.format.TextureFormat;
+import tfc.renirol.frontend.rendering.enums.masks.DynamicStateMasks;
 import tfc.renirol.frontend.rendering.enums.masks.StageMask;
+import tfc.renirol.frontend.rendering.enums.modes.image.FilterMode;
+import tfc.renirol.frontend.rendering.enums.modes.image.MipmapMode;
+import tfc.renirol.frontend.rendering.enums.modes.image.WrapMode;
 import tfc.renirol.frontend.rendering.pass.RenderPass;
 import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
 import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
@@ -26,6 +30,7 @@ import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
 import tfc.renirol.frontend.rendering.resource.buffer.DataFormat;
 import tfc.renirol.frontend.rendering.resource.descriptor.*;
 import tfc.renirol.frontend.rendering.resource.texture.Texture;
+import tfc.renirol.frontend.rendering.resource.texture.TextureSampler;
 import tfc.renirol.frontend.windowing.glfw.GLFWWindow;
 import tfc.renirol.util.ShaderCompiler;
 import tfc.test.shared.ReniSetup;
@@ -73,7 +78,7 @@ public class Textures {
         );
 
         PipelineState state = new PipelineState(ReniSetup.GRAPHICS_CONTEXT.getLogical());
-        state.dynamicState();
+        state.dynamicState(DynamicStateMasks.SCISSOR, DynamicStateMasks.VIEWPORT);
 
         DataFormat format = VertexFormats.POS4_COLOR4;
 
@@ -124,14 +129,22 @@ public class Textures {
         ibo.upload(0, indices);
         MemoryUtil.memFree(indices);
 
-        InputStream is = Textures.class.getClassLoader().getResourceAsStream("test/texture/image.png");
+        InputStream is = Textures.class.getClassLoader().getResourceAsStream("test/texture/texture.png");
         Texture texture = new Texture(
-                ReniSetup.GRAPHICS_CONTEXT.getSurface(),
                 ReniSetup.GRAPHICS_CONTEXT.getLogical(),
                 TextureFormat.PNG, TextureChannels.RGBA,
                 BitDepth.DEPTH_8, is
         );
-        ImageInfo info = new ImageInfo(texture);
+        TextureSampler sampler = texture.createSampler(
+                WrapMode.BORDER,
+                WrapMode.BORDER,
+                FilterMode.NEAREST,
+                FilterMode.NEAREST,
+                MipmapMode.NEAREST,
+                true, 16f,
+                0f, 0f, 0f
+        );
+        ImageInfo info = new ImageInfo(texture, sampler);
         set.bind(0, 0, DescriptorType.COMBINED_SAMPLED_IMAGE, info);
 
         GraphicsPipeline pipeline0 = new GraphicsPipeline(state, pass, VERT, FRAG);
@@ -150,7 +163,7 @@ public class Textures {
                     ReniQueueType.GRAPHICS, true,
                     false
             );
-            buffer.clearColor(0, 0, 0, 1);
+            buffer.clearColor(1, 0, 0, 1);
 
             while (!ReniSetup.WINDOW.shouldClose()) {
                 frame++;
@@ -223,6 +236,9 @@ public class Textures {
             err.printStackTrace();
         }
 
+        info.destroy();
+        sampler.destroy();
+        texture.destroy();
         layout.destroy();
         pool.destroy();
         MemoryUtil.memFree(buffer1);

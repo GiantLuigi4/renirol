@@ -9,6 +9,10 @@ import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.hardware.util.ReniDestructable;
 import tfc.renirol.frontend.rendering.ReniQueue;
 import tfc.renirol.frontend.rendering.enums.BindPoint;
+import tfc.renirol.frontend.rendering.enums.modes.CompareOp;
+import tfc.renirol.frontend.rendering.enums.modes.CullMode;
+import tfc.renirol.frontend.rendering.enums.modes.FrontFace;
+import tfc.renirol.frontend.rendering.enums.modes.PrimitiveType;
 import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
 import tfc.renirol.frontend.rendering.debug.DebugMarker;
@@ -183,6 +187,30 @@ public class CommandBuffer implements ReniDestructable {
 
     public void endPass() {
         VK10.vkCmdEndRenderPass(cmd);
+    }
+
+    public void cullMode(CullMode mode) {
+        VK13.vkCmdSetCullMode(cmd, mode.id);
+    }
+
+    public void primitiveType(PrimitiveType type) {
+        VK13.vkCmdSetPrimitiveTopology(cmd, type.id);
+    }
+
+    public void usePrimitiveRestart(boolean value) {
+        VK13.vkCmdSetPrimitiveRestartEnable(cmd, value);
+    }
+
+    public void useDepthTest(boolean value) {
+        VK13.vkCmdSetDepthTestEnable(cmd, value);
+    }
+
+    public void depthOperation(CompareOp op) {
+        VK13.vkCmdSetDepthCompareOp(cmd, op.id);
+    }
+
+    public void setFrontFace(FrontFace face) {
+        VK13.vkCmdSetFrontFace(cmd, face.id);
     }
 
     @Override

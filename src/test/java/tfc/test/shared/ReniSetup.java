@@ -24,7 +24,7 @@ public class ReniSetup {
 
     static {
         Setup.performanceSetup();
-        Setup.loadRenderdoc();
+//        Setup.loadRenderdoc();
         if (!Renirol.BACKEND.equals("OpenGL"))
             Setup.noAPI();
         WINDOW = Scenario.useWinNT ? new WinNTWindow(
@@ -44,8 +44,6 @@ public class ReniSetup {
         GRAPHICS_CONTEXT.setup(WINDOW, "ReniTest", 1, 0, 0); // inits vulkan instance
         GRAPHICS_CONTEXT.supportingDevice(
                 new DeviceQuery()
-                        // if any dedicated GPU meets the requirements, then filter out any non-dedicated GPU
-                        .prioritizeIntegrated()
                         .require((dev) -> { // print information about the devices
                             System.out.println(dev.getName());
                             System.out.println(" - Driver");
@@ -65,6 +63,8 @@ public class ReniSetup {
                                 ReniQueueType.GRAPHICS, ReniQueueType.TRANSFER
                         ))
                         .reniRecommended()
+                        // if any integrated GPU meets the requirements, then filter out any non-dedicated GPU
+                        .prioritizeIntegrated()
                         // low-importance features
                         .request(100, ReniHardwareCapability.SUPPORTS_INDICES.configured(ReniQueueType.COMPUTE))
                         // microsoft seems to emulate GPUs with "Dozen" being the driver name, and I'm assuming those are slower
@@ -87,9 +87,6 @@ public class ReniSetup {
                                                 new ReniQueueType[]{ReniQueueType.GRAPHICS, ReniQueueType.TRANSFER, ReniQueueType.COMPUTE} :
                                                 new ReniQueueType[]{ReniQueueType.GRAPHICS, ReniQueueType.TRANSFER}
                                 )
-                                .with(MeshShaders.INSTANCE)
-                                .with(Multiview.INSTANCE)
-                                .with(MultiDraw.INSTANCE)
                 ).create()
         );
         WINDOW.initContext(GRAPHICS_CONTEXT);
