@@ -66,15 +66,21 @@ public class CommandBuffer implements ReniDestructable {
     }
 
     public static CommandBuffer create(ReniLogicalDevice device, ReniQueueType queueType, boolean primary, boolean forReuse) {
-        return new CommandBuffer(device, queueType, primary, forReuse);
+        return new CommandBuffer(device, queueType, primary, forReuse, false);
     }
 
-    private CommandBuffer(ReniLogicalDevice device, ReniQueueType queueType, boolean primary, boolean forReuse) {
+    public static CommandBuffer create(ReniLogicalDevice device, ReniQueueType queueType, boolean primary, boolean forReuse, boolean shortLived) {
+        return new CommandBuffer(device, queueType, primary, forReuse, shortLived);
+    }
+
+    private CommandBuffer(ReniLogicalDevice device, ReniQueueType queueType, boolean primary, boolean forReuse, boolean shortLived) {
         this.device = device.getDirect(VkDevice.class);
         ownPool = true;
         VkCommandPoolCreateInfo poolCreateInfo = VkCommandPoolCreateInfo.calloc();
         poolCreateInfo.sType(VK13.VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-        poolCreateInfo.flags(VK13.VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+        if (shortLived)
+            poolCreateInfo.flags(VK13.VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+        else poolCreateInfo.flags(VK13.VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
         poolCreateInfo.queueFamilyIndex(device.getQueueFamily(queueType));
         pool = VkUtil.getCheckedLong(
                 (buf) -> VK13.nvkCreateCommandPool(device.getDirect(VkDevice.class), poolCreateInfo.address(), 0, MemoryUtil.memAddress(buf))

@@ -54,20 +54,10 @@ public class Main {
                 "frag",
                 "main"
         );
-        Shader FRAG1 = new Shader(
-                compiler,
-                ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                read(Main.class.getClassLoader().getResourceAsStream("shader1.frag")),
-                Shaderc.shaderc_glsl_fragment_shader,
-                VK10.VK_SHADER_STAGE_FRAGMENT_BIT,
-                "frag1",
-                "main"
-        );
 
         PipelineState state = new PipelineState(ReniSetup.GRAPHICS_CONTEXT.getLogical());
         state.dynamicState();
         GraphicsPipeline pipeline0 = new GraphicsPipeline(state, pass, VERT, FRAG);
-        GraphicsPipeline pipeline1 = new GraphicsPipeline(state, pass, VERT, FRAG1);
 
         try {
             ReniSetup.WINDOW.grabContext();
@@ -86,10 +76,7 @@ public class Main {
 
                 buffer.startLabel("Main Pass", 0.5f, 0, 0, 0.5f);
                 buffer.beginPass(pass, fbo, ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
-                if (new Random().nextBoolean())
-                    buffer.bindPipe(pipeline0);
-                else
-                    buffer.bindPipe(pipeline1);
+                buffer.bindPipe(pipeline0);
                 buffer.viewportScissor(
                         0, 0,
                         ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents().width(),
@@ -116,10 +103,8 @@ public class Main {
         }
 
         ReniSetup.GRAPHICS_CONTEXT.getLogical().waitForIdle();
-        FRAG1.destroy();
         FRAG.destroy();
         VERT.destroy();
-        pipeline1.destroy();
         pipeline0.destroy();
         pass.destroy();
         ReniSetup.GRAPHICS_CONTEXT.destroy();

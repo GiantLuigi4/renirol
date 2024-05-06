@@ -52,13 +52,13 @@ public class DepthBuffer {
         {
             RenderPassInfo info = new RenderPassInfo(ReniSetup.GRAPHICS_CONTEXT.getLogical(), ReniSetup.GRAPHICS_CONTEXT.getSurface());
             pass = info.colorAttachment(
-                    Operation.CLEAR, Operation.PERFORM,
+                    Operation.CLEAR, Operation.NONE,
                     ImageLayout.UNDEFINED, ImageLayout.PRESENT,
                     ReniSetup.selector
             ).depthAttachment(
-                    Operation.CLEAR, Operation.PERFORM,
+                    Operation.CLEAR, Operation.NONE,
                     ImageLayout.UNDEFINED, ImageLayout.DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                    VK13.VK_FORMAT_D32_SFLOAT
+                    ReniSetup.DEPTH_FORMAT
             ).dependency().subpass().create();
             info.destroy();
         }
@@ -238,13 +238,14 @@ public class DepthBuffer {
                 );
                 buffer.endPass();
                 buffer.endLabel();
-                buffer.transition(
-                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
-                        StageMask.GRAPHICS,
-                        StageMask.GRAPHICS,
-                        ImageLayout.UNDEFINED,
-                        ImageLayout.PRESENT
-                );
+                // TODO: setup access flags
+//                buffer.transition(
+//                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
+//                        StageMask.TOP_OF_PIPE,
+//                        StageMask.TRANSFER,
+//                        ImageLayout.PRESENT,
+//                        ImageLayout.PRESENT
+//                );
                 buffer.end();
 
                 ReniSetup.GRAPHICS_CONTEXT.submitFrame(buffer);

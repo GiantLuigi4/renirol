@@ -65,7 +65,7 @@ public class ReniSetup {
 //                        .prioritizeIntegrated()
                         // low-importance features
                         .request(100, ReniHardwareCapability.SUPPORTS_INDICES.configured(ReniQueueType.COMPUTE))
-                        // microsoft seems to emulate GPUs with "Dozen" being the driver name, and I'm assuming those are slower
+                        // microsoft seems to emulate GPUs with "Dozen" being the driver name, and these are kinda horrible at functioning
                         // so filter those out if possible
                         .request(-2000, device -> device.getDriverName().toString().contains("Dozen"))
         ); // does nothing with OpenGL
@@ -73,7 +73,6 @@ public class ReniSetup {
         GRAPHICS_CONTEXT.withLogical(
                 Scenario.configureDevice(
                         GRAPHICS_CONTEXT.getHardware().createLogical()
-                                .enableIfPossible(KHRSpirv14.VK_KHR_SPIRV_1_4_EXTENSION_NAME)
                                 .enableIfPossible(KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME)
                                 .enableIfPossible(NVLowLatency.VK_NV_LOW_LATENCY_EXTENSION_NAME)
                                 // TODO: should probably support shared pairs
@@ -97,11 +96,7 @@ public class ReniSetup {
                     new ChannelInfo('b', 8, 16, 32)
             )
             .type("SRGB");
-    public static final FormatSelector depthSelector = new FormatSelector()
-            .channels(
-                    new ChannelInfo('r', 8, 16, 32)
-            )
-            .type("SRGB");
+    public static final int DEPTH_FORMAT = VK13.VK_FORMAT_D16_UNORM;
 
     public static void initialize() {
         WINDOW.pollSize();
@@ -121,7 +116,7 @@ public class ReniSetup {
             ReniSetup.GRAPHICS_CONTEXT.depthBuffer().create(
                     ReniSetup.WINDOW.getWidth(),
                     ReniSetup.WINDOW.getHeight(),
-                    VK13.VK_FORMAT_D32_SFLOAT
+                    DEPTH_FORMAT
             );
         }
         ReniSetup.WINDOW.show();

@@ -109,12 +109,12 @@ public class Texture implements ReniDestructable {
 
         CommandBuffer buffer = CommandBuffer.create(
                 device, ReniQueueType.GRAPHICS,
-                true, false
+                true, false,
+                false
         );
         VK13.vkBindImageMemory(device.getDirect(VkDevice.class), handle, memory, 0);
-        {
-            buffer.begin();
 
+        {
             VkBufferImageCopy.Buffer inf = VkBufferImageCopy.calloc(1);
             VkExtent3D extent2D = VkExtent3D.calloc();
             extent2D.set(width, height, 1);
@@ -123,21 +123,36 @@ public class Texture implements ReniDestructable {
             inf.imageExtent(extent2D);
             inf.imageSubresource().layerCount(1);
             inf.imageSubresource().aspectMask(VK13.VK_IMAGE_ASPECT_COLOR_BIT);
+
+            buffer.begin();
+            buffer.transition(
+                    handle, StageMask.TOP_OF_PIPE, StageMask.TOP_OF_PIPE,
+                    ImageLayout.UNDEFINED, ImageLayout.TRANSFER_DST_OPTIMAL
+            );
+            buffer.end();
+            buffer.submit(device.getStandardQueue(ReniQueueType.GRAPHICS));
+            buffer.reset();
+            buffer.begin();
             VK13.vkCmdCopyBufferToImage(
                     buffer.getDirect(VkCommandBuffer.class),
                     data.getHandle(),
                     handle, VK13.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     inf
             );
-            extent2D.free();
-            inf.free();
-            buffer.transition(
-                    handle, StageMask.GRAPHICS, StageMask.GRAPHICS,
-                    ImageLayout.TRANSFER_DST_OPTIMAL, ImageLayout.SHADER_READONLY
-            );
-
             buffer.end();
             buffer.submit(device.getStandardQueue(ReniQueueType.GRAPHICS));
+            buffer.reset();
+            buffer.begin();
+            buffer.transition(
+                    handle, StageMask.TOP_OF_PIPE, StageMask.TOP_OF_PIPE,
+                    ImageLayout.TRANSFER_DST_OPTIMAL, ImageLayout.SHADER_READONLY
+            );
+            buffer.end();
+            buffer.submit(device.getStandardQueue(ReniQueueType.GRAPHICS));
+
+            extent2D.free();
+            inf.free();
+
             // must wait for idle to destroy buffer
             device.waitForIdle();
             buffer.destroy();

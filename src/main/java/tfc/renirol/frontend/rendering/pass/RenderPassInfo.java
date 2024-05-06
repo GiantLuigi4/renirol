@@ -90,7 +90,7 @@ public class RenderPassInfo implements ReniDestructable {
         dependency.dstSubpass(0);
 
         dependency.srcStageMask(
-                VK10.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT |
+                VK10.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
                         (depth ? VK13.VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT : 0)
         );
         dependency.srcAccessMask(0);

@@ -111,14 +111,14 @@ public class Image implements ReniDestructable {
 
         CommandBuffer cmd = CommandBuffer.create(
                 logical, ReniQueueType.GRAPHICS,
-                true, false
+                true, false, true
         );
         cmd.begin();
         switch (usage) {
             case COLOR -> {
                 cmd.transition(
-                        handle, StageMask.GRAPHICS, StageMask.GRAPHICS,
-                        ImageLayout.UNDEFINED, ImageLayout.SHADER_READONLY
+                        handle, StageMask.TOP_OF_PIPE, StageMask.TOP_OF_PIPE,
+                        ImageLayout.UNDEFINED, ImageLayout.COLOR_ATTACHMENT_OPTIMAL
                 );
             }
             case DEPTH -> {

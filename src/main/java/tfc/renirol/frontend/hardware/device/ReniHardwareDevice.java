@@ -168,6 +168,9 @@ public class ReniHardwareDevice {
 
         public LogicalDeviceBuilder() {
             createInfo.sType(VK10.VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
+            boolean rba = vkFeatures.robustBufferAccess();
+            vkFeatures.robustBufferAccess(false);
+            mustFree(() -> vkFeatures.robustBufferAccess(rba));
             createInfo.pEnabledFeatures(vkFeatures);
             releaseFuncs.add(createInfo::free);
         }
