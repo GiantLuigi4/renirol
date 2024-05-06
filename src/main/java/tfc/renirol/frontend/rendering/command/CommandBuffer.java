@@ -80,7 +80,8 @@ public class CommandBuffer implements ReniDestructable {
         poolCreateInfo.sType(VK13.VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
         if (shortLived)
             poolCreateInfo.flags(VK13.VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
-        else poolCreateInfo.flags(VK13.VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+        else poolCreateInfo.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+
         poolCreateInfo.queueFamilyIndex(device.getQueueFamily(queueType));
         pool = VkUtil.getCheckedLong(
                 (buf) -> VK13.nvkCreateCommandPool(device.getDirect(VkDevice.class), poolCreateInfo.address(), 0, MemoryUtil.memAddress(buf))
