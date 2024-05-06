@@ -30,6 +30,7 @@ public class PipelineState {
     VkPipelineColorBlendAttachmentState.Buffer colorBlendAttachment = VkPipelineColorBlendAttachmentState.calloc(1);
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = VkPipelineLayoutCreateInfo.calloc();
     VkPipelineColorBlendStateCreateInfo colorBlending = VkPipelineColorBlendStateCreateInfo.calloc();
+    VkPipelineDepthStencilStateCreateInfo depthStencil = VkPipelineDepthStencilStateCreateInfo.calloc();
 
     public PipelineState(ReniLogicalDevice device) {
         this.device = device.getDirect(VkDevice.class);
@@ -126,6 +127,25 @@ public class PipelineState {
         pipelineLayoutInfo.setLayoutCount(0); // Optional
         pipelineLayoutInfo.pSetLayouts(null); // Optional
         pipelineLayoutInfo.pPushConstantRanges(null); // Optional
+
+        depthStencil.sType(VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);
+        depthStencil.depthTestEnable(false);
+        depthStencil.depthWriteEnable(false);
+        depthStencil.depthCompareOp(VK_COMPARE_OP_LESS);
+        depthStencil.depthBoundsTestEnable(false);
+        depthStencil.minDepthBounds(0.0f); // Optional
+        depthStencil.maxDepthBounds(1.0f); // Optional
+        depthStencil.stencilTestEnable(false);
+    }
+
+    public PipelineState depthTest(boolean value) {
+        depthStencil.depthTestEnable(value);
+        return this;
+    }
+
+    public PipelineState depthMask(boolean value) {
+        depthStencil.depthWriteEnable(value);
+        return this;
     }
 
     public void alphaBlending() {

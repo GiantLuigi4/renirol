@@ -26,6 +26,8 @@ public abstract class GenericWindow {
 
     public abstract boolean shouldClose();
 
+    public abstract void pollSize();
+
     public abstract void swapAndPollSize();
 
     public abstract long handle();

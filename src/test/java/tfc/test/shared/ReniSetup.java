@@ -4,12 +4,10 @@ import org.lwjgl.vulkan.*;
 import tfc.renirol.ReniContext;
 import tfc.renirol.Renirol;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
-import tfc.renirol.frontend.hardware.device.feature.MeshShaders;
-import tfc.renirol.frontend.hardware.device.feature.MultiDraw;
-import tfc.renirol.frontend.hardware.device.feature.Multiview;
-import tfc.renirol.frontend.hardware.device.support.image.ReniImageCapabilities;
+import tfc.renirol.frontend.hardware.device.support.image.ReniSwapchainCapabilities;
 import tfc.renirol.frontend.hardware.util.DeviceQuery;
 import tfc.renirol.frontend.hardware.util.ReniHardwareCapability;
+import tfc.renirol.frontend.rendering.enums.flags.SwapchainUsage;
 import tfc.renirol.frontend.rendering.framebuffer.SwapChain;
 import tfc.renirol.frontend.rendering.selectors.ChannelInfo;
 import tfc.renirol.frontend.rendering.selectors.FormatSelector;
@@ -99,10 +97,16 @@ public class ReniSetup {
                     new ChannelInfo('b', 8, 16, 32)
             )
             .type("SRGB");
+    public static final FormatSelector depthSelector = new FormatSelector()
+            .channels(
+                    new ChannelInfo('r', 8, 16, 32)
+            )
+            .type("SRGB");
 
     public static void initialize() {
+        WINDOW.pollSize();
         final SwapChain presentChain = ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain();
-        final ReniImageCapabilities capabilities = ReniSetup.GRAPHICS_CONTEXT.getHardware().features.image(
+        final ReniSwapchainCapabilities capabilities = ReniSetup.GRAPHICS_CONTEXT.getHardware().features.image(
                 ReniSetup.GRAPHICS_CONTEXT.getSurface()
         );
         presentChain.create(
@@ -112,6 +116,14 @@ public class ReniSetup {
                 Math.min(capabilities.surfaceCapabilities.minImageCount() + 2, capabilities.surfaceCapabilities.maxImageCount()),
                 capabilities.presentModes.get(0)
         );
+        if (Scenario.useDepth) {
+            ReniSetup.GRAPHICS_CONTEXT.createDepth();
+            ReniSetup.GRAPHICS_CONTEXT.depthBuffer().create(
+                    ReniSetup.WINDOW.getWidth(),
+                    ReniSetup.WINDOW.getHeight(),
+                    VK13.VK_FORMAT_D32_SFLOAT
+            );
+        }
         ReniSetup.WINDOW.show();
         capabilities.destroy();
     }

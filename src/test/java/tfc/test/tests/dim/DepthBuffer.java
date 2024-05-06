@@ -1,7 +1,8 @@
-package tfc.test.tests.shader;
+package tfc.test.tests.dim;
 
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.linux.OpenHow;
 import org.lwjgl.util.shaderc.Shaderc;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VK13;
@@ -26,14 +27,15 @@ import tfc.renirol.frontend.rendering.enums.modes.image.WrapMode;
 import tfc.renirol.frontend.rendering.pass.RenderPass;
 import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
 import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
-import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
 import tfc.renirol.frontend.rendering.resource.buffer.DataFormat;
+import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
 import tfc.renirol.frontend.rendering.resource.descriptor.*;
 import tfc.renirol.frontend.rendering.resource.image.texture.Texture;
 import tfc.renirol.frontend.rendering.resource.image.texture.TextureSampler;
 import tfc.renirol.frontend.windowing.glfw.GLFWWindow;
 import tfc.renirol.util.ShaderCompiler;
 import tfc.test.shared.ReniSetup;
+import tfc.test.shared.Scenario;
 import tfc.test.shared.VertexElements;
 import tfc.test.shared.VertexFormats;
 
@@ -41,8 +43,9 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
-public class Textures {
+public class DepthBuffer {
     public static void main(String[] args) {
+        Scenario.useDepth = true;
         ReniSetup.initialize();
 
         final RenderPass pass;
@@ -50,8 +53,12 @@ public class Textures {
             RenderPassInfo info = new RenderPassInfo(ReniSetup.GRAPHICS_CONTEXT.getLogical(), ReniSetup.GRAPHICS_CONTEXT.getSurface());
             pass = info.colorAttachment(
                     Operation.CLEAR, Operation.PERFORM,
-                    ImageLayout.COLOR_ATTACHMENT_OPTIMAL, ImageLayout.PRESENT,
+                    ImageLayout.UNDEFINED, ImageLayout.PRESENT,
                     ReniSetup.selector
+            ).depthAttachment(
+                    Operation.CLEAR, Operation.PERFORM,
+                    ImageLayout.UNDEFINED, ImageLayout.DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                    VK13.VK_FORMAT_D32_SFLOAT
             ).dependency().subpass().create();
             info.destroy();
         }
@@ -61,7 +68,7 @@ public class Textures {
         final Shader VERT = new Shader(
                 compiler,
                 ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                read(Textures.class.getClassLoader().getResourceAsStream("test/texture/shader.vert")),
+                read(DepthBuffer.class.getClassLoader().getResourceAsStream("test/depth/shader.vert")),
                 Shaderc.shaderc_glsl_vertex_shader,
                 VK10.VK_SHADER_STAGE_VERTEX_BIT,
                 "vert",
@@ -70,7 +77,7 @@ public class Textures {
         final Shader FRAG = new Shader(
                 compiler,
                 ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                read(Textures.class.getClassLoader().getResourceAsStream("test/texture/shader.frag")),
+                read(DepthBuffer.class.getClassLoader().getResourceAsStream("test/depth/shader.frag")),
                 Shaderc.shaderc_glsl_fragment_shader,
                 VK10.VK_SHADER_STAGE_FRAGMENT_BIT,
                 "frag",
@@ -78,14 +85,15 @@ public class Textures {
         );
 
         PipelineState state = new PipelineState(ReniSetup.GRAPHICS_CONTEXT.getLogical());
+        state.depthTest(true).depthMask(true);
         state.dynamicState(DynamicStateMasks.SCISSOR, DynamicStateMasks.VIEWPORT);
 
-        DataFormat format = VertexFormats.POS4_COLOR4;
+        DataFormat format = VertexFormats.POS4_UV2;
 
         final BufferDescriptor desc0 = new BufferDescriptor(format);
         desc0.describe(0);
         desc0.attribute(0, 0, AttributeFormat.RGB32_FLOAT, format.offset(VertexElements.POSITION_XYZW));
-        desc0.attribute(0, 1, AttributeFormat.RGB32_FLOAT, format.offset(VertexElements.COLOR_RGBA));
+        desc0.attribute(0, 1, AttributeFormat.RG32_FLOAT, format.offset(VertexElements.UV0));
 
         state.vertexInput(desc0);
 
@@ -116,8 +124,8 @@ public class Textures {
         );
         state.descriptorLayouts(layout);
 
-        final GPUBuffer vbo = new GPUBuffer(ReniSetup.GRAPHICS_CONTEXT.getLogical(), desc0, BufferUsage.VERTEX, 4);
-        final GPUBuffer ibo = new GPUBuffer(ReniSetup.GRAPHICS_CONTEXT.getLogical(), IndexSize.INDEX_16, BufferUsage.INDEX, 6);
+        final GPUBuffer vbo = new GPUBuffer(ReniSetup.GRAPHICS_CONTEXT.getLogical(), desc0, BufferUsage.VERTEX, 8);
+        final GPUBuffer ibo = new GPUBuffer(ReniSetup.GRAPHICS_CONTEXT.getLogical(), IndexSize.INDEX_16, BufferUsage.INDEX, 12);
         vbo.allocate();
         ibo.allocate();
         final ByteBuffer buffer1 = vbo.createByteBuf();
@@ -125,11 +133,14 @@ public class Textures {
         indices.asShortBuffer().put(new short[]{
                 0, 1, 2,
                 3, 1, 0,
+
+                4, 5, 6,
+                7, 5, 4,
         });
         ibo.upload(0, indices);
         MemoryUtil.memFree(indices);
 
-        InputStream is = Textures.class.getClassLoader().getResourceAsStream("test/texture/texture.png");
+        InputStream is = DepthBuffer.class.getClassLoader().getResourceAsStream("test/texture/texture.png");
         Texture texture = new Texture(
                 ReniSetup.GRAPHICS_CONTEXT.getLogical(),
                 TextureFormat.PNG, TextureChannels.RGBA,
@@ -164,6 +175,7 @@ public class Textures {
                     false
             );
             buffer.clearColor(0, 0, 0, 1);
+            buffer.clearDepth(1f);
 
             while (!ReniSetup.WINDOW.shouldClose()) {
                 frame++;
@@ -173,17 +185,29 @@ public class Textures {
                     fb.put(
                             0,
                             new float[]{
-                                    (float) -Math.cos(Math.toRadians(frame)), (float) -Math.sin(Math.toRadians(frame)), 0, 0,
-                                    1, 0, 0, 1,
+                                    1, 0, 0.5f, 0,
+                                    1, 0,
 
-                                    (float) Math.cos(Math.toRadians(frame)), (float) Math.sin(Math.toRadians(frame)), 0, 0,
-                                    0, 1, 0, 1,
+                                    0, 1, 0.5f, 0,
+                                    0, 1,
 
-                                    (float) Math.cos(Math.toRadians(frame + 90)), (float) Math.sin(Math.toRadians(frame + 90)), 0, 0,
-                                    0, 0, 0, 1,
+                                    0, 0, 0.5f, 0,
+                                    0, 0,
 
-                                    (float) -Math.cos(Math.toRadians(frame + 90)), (float) -Math.sin(Math.toRadians(frame + 90)), 0, 0,
-                                    1, 1, 0, 1,
+                                    1, 1, 0.5f, 0,
+                                    1, 1,
+
+                                    0.5f, 0, 0, 0,
+                                    1, 0,
+
+                                    0, 0.5f, 1, 0,
+                                    0, 1,
+
+                                    0, 0, 1, 0,
+                                    0, 0,
+
+                                    0.5f, 0.5f, 0, 0,
+                                    1, 1,
                             }
                     );
                     vbo.upload(0, buffer1);
@@ -193,13 +217,6 @@ public class Textures {
                 long fbo = ReniSetup.GRAPHICS_CONTEXT.getFrameHandle(pass);
 
                 buffer.begin();
-                buffer.transition(
-                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
-                        StageMask.GRAPHICS,
-                        StageMask.GRAPHICS,
-                        ImageLayout.PRESENT,
-                        ImageLayout.COLOR_ATTACHMENT_OPTIMAL
-                );
 
                 buffer.startLabel("Main Pass", 0.5f, 0, 0, 0.5f);
                 buffer.beginPass(pass, fbo, ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
@@ -217,10 +234,17 @@ public class Textures {
                 buffer.vkCmdDrawIndexed(
                         0, 0,
                         0, 1,
-                        0, 6
+                        0, 12
                 );
                 buffer.endPass();
                 buffer.endLabel();
+                buffer.transition(
+                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
+                        StageMask.GRAPHICS,
+                        StageMask.GRAPHICS,
+                        ImageLayout.UNDEFINED,
+                        ImageLayout.PRESENT
+                );
                 buffer.end();
 
                 ReniSetup.GRAPHICS_CONTEXT.submitFrame(buffer);

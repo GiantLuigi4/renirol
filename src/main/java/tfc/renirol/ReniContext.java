@@ -1,28 +1,26 @@
 package tfc.renirol;
 
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.glfw.GLFWVulkan;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
-import tfc.renirol.frontend.hardware.device.support.image.ReniImageCapabilities;
 import tfc.renirol.frontend.hardware.util.DeviceQuery;
 import tfc.renirol.frontend.hardware.device.ReniHardwareDevice;
 import tfc.renirol.frontend.hardware.util.ReniDestructable;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
+import tfc.renirol.frontend.rendering.enums.flags.SwapchainUsage;
 import tfc.renirol.frontend.rendering.fencing.Fence;
 import tfc.renirol.frontend.rendering.fencing.Semaphore;
+import tfc.renirol.frontend.rendering.framebuffer.ChainBuffer;
 import tfc.renirol.frontend.rendering.framebuffer.FrameBuffer;
 import tfc.renirol.frontend.rendering.framebuffer.SwapChain;
 import tfc.renirol.frontend.rendering.pass.RenderPass;
+import tfc.renirol.frontend.rendering.resource.image.Image;
 import tfc.renirol.frontend.windowing.GenericWindow;
-import tfc.renirol.frontend.windowing.WindowManager;
-import tfc.renirol.frontend.windowing.glfw.GLFWWindow;
 import tfc.renirol.util.ReadOnlyList;
 
-import java.awt.*;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
@@ -38,7 +36,9 @@ public class ReniContext implements ReniDestructable {
     private ReniHardwareDevice hardware;
     private ReniLogicalDevice logical;
     private long surface;
+    private ChainBuffer buffer;
     private SwapChain graphicsChain;
+    private Image depthChain;
 
     public ReniContext() {
     }
@@ -130,9 +130,15 @@ public class ReniContext implements ReniDestructable {
                 (res) -> res
         );
         graphicsChain = new SwapChain(logical, surface);
+        buffer = new ChainBuffer(graphicsChain);
         semaphoreA = new Semaphore(logical);
         fenceA = semaphoreA.createFence();
         semaphoreB = new Semaphore(logical);
+    }
+
+    public void createDepth() {
+        depthChain = new Image(logical).setUsage(SwapchainUsage.DEPTH);
+        buffer = new ChainBuffer(graphicsChain, depthChain);
     }
 
     public void setupOffscreen() {
@@ -217,10 +223,6 @@ public class ReniContext implements ReniDestructable {
         VK10.nvkDestroyInstance(instance, 0);
     }
 
-    public SwapChain defaultSwapchain() {
-        return graphicsChain;
-    }
-
     public long getSurface() {
         return surface;
     }
@@ -242,7 +244,8 @@ public class ReniContext implements ReniDestructable {
     private boolean checkResize(int result, GenericWindow window) {
         if (result == KHRSwapchain.VK_ERROR_OUT_OF_DATE_KHR) {
             logical.waitForIdle();
-            resize(graphicsChain, window);
+            window.pollSize();
+            resize(buffer, window);
             return true;
         } else if (result != VK10.VK_SUCCESS && result != KHRSwapchain.VK_SUBOPTIMAL_KHR) {
             throw new RuntimeException("Failed swapchain image");
@@ -250,7 +253,7 @@ public class ReniContext implements ReniDestructable {
         return false;
     }
 
-    public static void resize(SwapChain framebuffer, GenericWindow window) {
+    public static void resize(ChainBuffer framebuffer, GenericWindow window) {
         framebuffer.recreate(window.getWidth(), window.getHeight());
     }
 
@@ -266,10 +269,6 @@ public class ReniContext implements ReniDestructable {
         return semaphoreB;
     }
 
-    public long getFrameHandle(RenderPass pass) {
-        return graphicsChain.getHandle(frame.get(0), pass);
-    }
-
     public Fence getFenceImage() {
         return fenceA;
     }
@@ -278,16 +277,28 @@ public class ReniContext implements ReniDestructable {
         buffer.submit(
                 getLogical().getStandardQueue(ReniQueueType.GRAPHICS),
                 VK13.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+//                VK13.VK_PIPELINE_STAGE_NONE,
                 getFenceImage().handle,
                 getSemaphoreImage().handle,
                 getSemaphorePresentation().handle
         );
-//        logical.getStandardQueue(ReniQueueType.GRAPHICS).await();
         getFenceImage().await();
         getFenceImage().reset();
     }
 
     public FrameBuffer getFramebuffer() {
         return graphicsChain.getFbo(getFrameIndex());
+    }
+
+    public long getFrameHandle(RenderPass pass) {
+        return buffer.createFbo(frame.get(0), pass);
+    }
+
+    public SwapChain defaultSwapchain() {
+        return graphicsChain;
+    }
+
+    public Image depthBuffer() {
+        return depthChain;
     }
 }

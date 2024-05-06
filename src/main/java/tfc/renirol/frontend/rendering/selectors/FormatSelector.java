@@ -2,12 +2,9 @@ package tfc.renirol.frontend.rendering.selectors;
 
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
-import tfc.renirol.frontend.hardware.device.support.image.ReniImageCapabilities;
+import tfc.renirol.frontend.hardware.device.support.image.ReniSwapchainCapabilities;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 public class FormatSelector {
     ChannelInfo[] channels;
@@ -100,7 +97,7 @@ public class FormatSelector {
         );
     }
 
-    public VkSurfaceFormatKHR select(ReniImageCapabilities image) {
+    public VkSurfaceFormatKHR select(ReniSwapchainCapabilities image) {
 //        loopForm:
 //        for (VkSurfaceFormatKHR format : image.formats) {
 //            String name = VkUtil.find(VK13.class, "VK_FORMAT_", format.format());

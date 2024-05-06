@@ -5,8 +5,9 @@ import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
-import tfc.renirol.frontend.hardware.device.support.image.ReniImageCapabilities;
+import tfc.renirol.frontend.hardware.device.support.image.ReniSwapchainCapabilities;
 import tfc.renirol.frontend.hardware.util.ReniDestructable;
+import tfc.renirol.frontend.rendering.enums.flags.SwapchainUsage;
 import tfc.renirol.frontend.rendering.pass.RenderPass;
 import tfc.renirol.frontend.rendering.selectors.FormatSelector;
 import tfc.renirol.util.Pair;
@@ -40,6 +41,12 @@ public class SwapChain implements ReniDestructable {
     VkSurfaceFormatKHR format;
     VkExtent2D extents;
     boolean initialized = false;
+    SwapchainUsage usage = SwapchainUsage.COLOR;
+
+    public SwapChain setUsage(SwapchainUsage usage) {
+        this.usage = usage;
+        return this;
+    }
 
     public void create(
             int width, int height,
@@ -49,12 +56,12 @@ public class SwapChain implements ReniDestructable {
     ) {
         if (initialized) destroy();
 
-        ReniImageCapabilities image = device.hardware.features.image(surface);
+        ReniSwapchainCapabilities image = device.hardware.features.image(surface);
 
         // create swapchain object
         {
-            Pair<Integer, Integer> min = image.minSize;
-            Pair<Integer, Integer> max = image.maxSize;
+            Pair<Integer, Integer> min = image.getMinSize();
+            Pair<Integer, Integer> max = image.getMaxSize();
 
             width = Math.clamp(width, min.left(), max.left());
             height = Math.clamp(height, min.right(), max.right());
@@ -74,7 +81,7 @@ public class SwapChain implements ReniDestructable {
             createInfo.imageColorSpace(format.colorSpace());
             createInfo.imageExtent(extent);
             createInfo.imageArrayLayers(1);
-            createInfo.imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+            createInfo.imageUsage(usage.id);
 
             // sharing
             int graphics, transfer;
@@ -157,7 +164,7 @@ public class SwapChain implements ReniDestructable {
             viewCI.components().b(VK10.VK_COMPONENT_SWIZZLE_IDENTITY);
             viewCI.components().a(VK10.VK_COMPONENT_SWIZZLE_IDENTITY);
             // subresource stuff
-            viewCI.subresourceRange().aspectMask(VK10.VK_IMAGE_ASPECT_COLOR_BIT);
+            viewCI.subresourceRange().aspectMask(usage.aspect);
             viewCI.subresourceRange().baseMipLevel(0);
             viewCI.subresourceRange().levelCount(1);
             viewCI.subresourceRange().baseArrayLayer(0);
@@ -219,7 +226,7 @@ public class SwapChain implements ReniDestructable {
                 width, height,
                 new FormatSelector() {
                     @Override
-                    public VkSurfaceFormatKHR select(ReniImageCapabilities image) {
+                    public VkSurfaceFormatKHR select(ReniSwapchainCapabilities image) {
                         return format;
                     }
                 }, frameCount,

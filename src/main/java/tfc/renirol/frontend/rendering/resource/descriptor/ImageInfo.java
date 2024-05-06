@@ -1,11 +1,10 @@
 package tfc.renirol.frontend.rendering.resource.descriptor;
 
 import org.lwjgl.vulkan.VK13;
-import org.lwjgl.vulkan.VkDescriptorBufferInfo;
 import org.lwjgl.vulkan.VkDescriptorImageInfo;
 import tfc.renirol.frontend.hardware.util.ReniDestructable;
-import tfc.renirol.frontend.rendering.resource.texture.Texture;
-import tfc.renirol.frontend.rendering.resource.texture.TextureSampler;
+import tfc.renirol.frontend.rendering.resource.image.texture.Texture;
+import tfc.renirol.frontend.rendering.resource.image.texture.TextureSampler;
 
 public class ImageInfo implements ReniDestructable {
     VkDescriptorImageInfo info;

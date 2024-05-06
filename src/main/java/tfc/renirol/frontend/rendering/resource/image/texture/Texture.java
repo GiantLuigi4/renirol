@@ -1,4 +1,4 @@
-package tfc.renirol.frontend.rendering.resource.texture;
+package tfc.renirol.frontend.rendering.resource.image.texture;
 
 import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.MemoryUtil;
@@ -9,9 +9,11 @@ import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.hardware.util.ReniDestructable;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.enums.BufferUsage;
+import tfc.renirol.frontend.rendering.enums.ImageLayout;
 import tfc.renirol.frontend.rendering.enums.format.BitDepth;
 import tfc.renirol.frontend.rendering.enums.format.TextureChannels;
 import tfc.renirol.frontend.rendering.enums.format.TextureFormat;
+import tfc.renirol.frontend.rendering.enums.masks.StageMask;
 import tfc.renirol.frontend.rendering.enums.modes.image.FilterMode;
 import tfc.renirol.frontend.rendering.enums.modes.image.MipmapMode;
 import tfc.renirol.frontend.rendering.enums.modes.image.WrapMode;
@@ -24,6 +26,7 @@ import java.nio.ShortBuffer;
 
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 
+// TODO: extend from image
 public class Texture implements ReniDestructable {
     final VkDevice device;
 
@@ -102,6 +105,7 @@ public class Texture implements ReniDestructable {
                 allocInfo.address(), 0,
                 MemoryUtil.memAddress(buf)
         ));
+        allocInfo.free();
 
         CommandBuffer buffer = CommandBuffer.create(
                 device, ReniQueueType.GRAPHICS,
@@ -127,6 +131,10 @@ public class Texture implements ReniDestructable {
             );
             extent2D.free();
             inf.free();
+            buffer.transition(
+                    handle, StageMask.GRAPHICS, StageMask.GRAPHICS,
+                    ImageLayout.TRANSFER_DST_OPTIMAL, ImageLayout.SHADER_READONLY
+            );
 
             buffer.end();
             buffer.submit(device.getStandardQueue(ReniQueueType.GRAPHICS));
@@ -137,7 +145,7 @@ public class Texture implements ReniDestructable {
             data.destroy();
         }
 
-        // image view&sampler
+        // image view
         {
             VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc();
             viewInfo.sType(VK13.VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);

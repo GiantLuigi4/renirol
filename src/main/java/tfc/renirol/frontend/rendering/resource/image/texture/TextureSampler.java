@@ -1,4 +1,4 @@
-package tfc.renirol.frontend.rendering.resource.texture;
+package tfc.renirol.frontend.rendering.resource.image.texture;
 
 import org.lwjgl.vulkan.VK13;
 import org.lwjgl.vulkan.VkDevice;

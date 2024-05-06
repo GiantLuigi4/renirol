@@ -4,10 +4,11 @@ import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.hardware.device.ReniHardwareDevice;
-import tfc.renirol.frontend.hardware.device.support.image.ReniImageCapabilities;
+import tfc.renirol.frontend.hardware.device.support.image.ReniSwapchainCapabilities;
 import tfc.renirol.util.Pair;
 
 import java.nio.IntBuffer;
+import java.util.HashMap;
 
 import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceFormatsKHR;
 import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfacePresentModesKHR;
@@ -16,7 +17,17 @@ public class ReniDeviceFeatures {
     private final VkPhysicalDeviceFeatures features;
     private final ReniHardwareDevice device;
 
-    public ReniImageCapabilities image(long surface) {
+    // apparently freeing the things stored by this is illegal, so apparently I need to cache this
+    private final HashMap<Long, ReniSwapchainCapabilities> map = new HashMap<>();
+
+    public ReniSwapchainCapabilities image(long surface) {
+        if (map.containsKey(surface)) {
+            ReniSwapchainCapabilities caps = map.get(surface);
+            VkUtil.check(KHRSurface.vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device.getDirect(VkPhysicalDevice.class), surface, caps.surfaceCapabilities));
+            caps.update();
+            return caps;
+        }
+
         VkSurfaceCapabilitiesKHR capabilitiesKHR = null;
         if (surface != 0) {
             capabilitiesKHR = VkSurfaceCapabilitiesKHR.malloc();
@@ -47,12 +58,14 @@ public class ReniDeviceFeatures {
 
         MemoryUtil.memFree(countBuf);
 
-        return new ReniImageCapabilities(
+        ReniSwapchainCapabilities caps = new ReniSwapchainCapabilities(
                 capabilitiesKHR != null ? Pair.of(capabilitiesKHR.minImageExtent().width(), capabilitiesKHR.minImageExtent().height()) : null,
                 capabilitiesKHR != null ? Pair.of(capabilitiesKHR.maxImageExtent().width(), capabilitiesKHR.maxImageExtent().height()) : null,
                 capabilitiesKHR,
                 formats, presentModes
         );
+        map.put(surface, caps);
+        return caps;
     }
 
     public final boolean computeShader;

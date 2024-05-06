@@ -9,6 +9,7 @@ import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.hardware.util.ReniDestructable;
 import tfc.renirol.frontend.rendering.ReniQueue;
 import tfc.renirol.frontend.rendering.enums.BindPoint;
+import tfc.renirol.frontend.rendering.enums.flags.SwapchainUsage;
 import tfc.renirol.frontend.rendering.enums.modes.CompareOp;
 import tfc.renirol.frontend.rendering.enums.modes.CullMode;
 import tfc.renirol.frontend.rendering.enums.modes.FrontFace;
@@ -255,6 +256,8 @@ public class CommandBuffer implements ReniDestructable {
         VkSubmitInfo info = VkSubmitInfo.calloc();
         info.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
         info.pCommandBuffers(theBufferOfMyself);
+        dstStage.put(0, VK13.VK_PIPELINE_STAGE_NONE);
+        info.pWaitDstStageMask(dstStage);
 
         VkUtil.check(nvkQueueSubmit(queue.getDirect(VkQueue.class), 1, info.address(), 0));
         queue.await();
@@ -274,6 +277,8 @@ public class CommandBuffer implements ReniDestructable {
     }
 
     final VkClearValue.Buffer clearColor = VkClearValue.calloc(1);
+    final VkClearValue.Buffer depthColor = VkClearValue.calloc(1);
+    final VkClearValue.Buffer clearValues = VkClearValue.calloc(2);
 
     public void clearColor(float r, float g, float b, float a) {
         FloatBuffer buffer1 = clearColor.get(0).color().float32();
@@ -281,37 +286,27 @@ public class CommandBuffer implements ReniDestructable {
         buffer1.put(1, g);
         buffer1.put(2, b);
         buffer1.put(3, a);
+
         renderPassInfo.clearValueCount(1);
         renderPassInfo.pClearValues(clearColor);
     }
 
-    public void transition(
-            FrameBuffer framebuffer,
-            StageMask oldStage, StageMask newStage,
-            ImageLayout oldLayout, ImageLayout newLayout
-    ) {
-        VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1);
-        barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-        barrier.oldLayout(oldLayout.value);
-        barrier.newLayout(newLayout.value);
-        barrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
-        barrier.dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
-        barrier.image(framebuffer.image);
-        barrier.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-        barrier.subresourceRange().baseMipLevel(0);
-        barrier.subresourceRange().levelCount(1);
-        barrier.subresourceRange().baseArrayLayer(0);
-        barrier.subresourceRange().layerCount(1);
-        barrier.srcAccessMask(0); // TODO
-        barrier.dstAccessMask(0); // TODO
-        VK13.vkCmdPipelineBarrier(
-                cmd,
-                oldStage.value, newStage.value,
-                0,
-                null, null,
-                barrier
-        );
-        barrier.free();
+    public void clearDepth(float depth) {
+        depthColor.depthStencil().depth(depth);
+
+        clearValues.put(0, clearColor.get(0));
+        clearValues.put(1, depthColor.get(0));
+        renderPassInfo.clearValueCount(2);
+        renderPassInfo.pClearValues(clearValues);
+    }
+
+    public void clearStencil(int value) {
+        depthColor.depthStencil().stencil(value);
+
+        clearValues.put(0, clearColor.get(0));
+        clearValues.put(1, depthColor.get(0));
+        renderPassInfo.clearValueCount(2);
+        renderPassInfo.pClearValues(clearValues);
     }
 
     public void transition(
@@ -333,6 +328,37 @@ public class CommandBuffer implements ReniDestructable {
         barrier.subresourceRange().layerCount(1);
         barrier.srcAccessMask(0); // TODO
         barrier.dstAccessMask(0); // TODO
+        VK13.vkCmdPipelineBarrier(
+                cmd,
+                oldStage.value, newStage.value,
+                0,
+                null, null,
+                barrier
+        );
+        barrier.free();
+    }
+
+    public void transition(
+            long image,
+            SwapchainUsage usage,
+            StageMask oldStage, StageMask newStage,
+            ImageLayout oldLayout, ImageLayout newLayout
+    ) {
+        VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1);
+        barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+        barrier.oldLayout(oldLayout.value);
+        barrier.newLayout(newLayout.value);
+        barrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+        barrier.dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+        barrier.image(image);
+        barrier.subresourceRange().aspectMask(usage.aspect);
+        barrier.subresourceRange().baseMipLevel(0);
+        barrier.subresourceRange().levelCount(1);
+        barrier.subresourceRange().baseArrayLayer(0);
+        barrier.subresourceRange().layerCount(1);
+        // TODO: expose
+        barrier.srcAccessMask(0);
+        barrier.dstAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
         VK13.vkCmdPipelineBarrier(
                 cmd,
                 oldStage.value, newStage.value,
