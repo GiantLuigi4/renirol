@@ -1,6 +1,6 @@
 package tfc.renirol.util.windows;
 
-import tfc.renirol.util.ReniLib;
+import tfc.renirol.util.accel.ReniLib;
 
 public class PerformanceCounters {
     static {

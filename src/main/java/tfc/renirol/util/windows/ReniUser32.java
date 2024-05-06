@@ -2,7 +2,7 @@ package tfc.renirol.util.windows;
 
 import org.lwjgl.system.NativeType;
 import org.lwjgl.system.windows.User32;
-import tfc.renirol.util.ReniLib;
+import tfc.renirol.util.accel.ReniLib;
 
 public class ReniUser32 {
     static {

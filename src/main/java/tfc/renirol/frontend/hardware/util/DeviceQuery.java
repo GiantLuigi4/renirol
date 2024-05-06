@@ -132,18 +132,8 @@ public class DeviceQuery {
         Stream<ReniHardwareDevice> deviceStream = devices.stream();
         for (DeviceFilter filter : filters) deviceStream = filter.apply(deviceStream);
 
-        deviceStream = new SoftRequisite() {
-            @Override
-            public boolean check(ReniHardwareDevice device) {
-                return priority.check(device);
-            }
-        }.apply(deviceStream);
-        deviceStream = new SoftRequisite() {
-            @Override
-            public boolean check(ReniHardwareDevice device) {
-                return priorityB.check(device);
-            }
-        }.apply(deviceStream);
+        deviceStream = ((SoftRequisite) device -> priority.check(device)).apply(deviceStream);
+        deviceStream = ((SoftRequisite) device -> priorityB.check(device)).apply(deviceStream);
 
         if (!requests.isEmpty()) {
             ArrayList<Pair<Integer, ReniHardwareDevice>> scoring = new ArrayList<>();

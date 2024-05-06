@@ -30,6 +30,11 @@ public class FormatSelector {
                 (format) -> {
                     int score = 0;
 
+                    // TODO: temp
+                    if (format == VK13.VK_FORMAT_R8G8B8A8_SRGB)
+                        return 100000000;
+                    else if (true) return 0;
+
                     String name = VkUtil.find(VK13.class, "VK_FORMAT_", format);
 
                     if (type == null || name.endsWith(type)) {

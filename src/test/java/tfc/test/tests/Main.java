@@ -106,6 +106,8 @@ public class Main {
                 ReniSetup.WINDOW.swapAndPollSize();
                 GLFWWindow.poll();
 
+                ReniSetup.GRAPHICS_CONTEXT.getLogical().waitForIdle();
+
                 VK13.nvkDestroyFramebuffer(ReniSetup.GRAPHICS_CONTEXT.getLogical().getDirect(VkDevice.class), fbo, 0);
             }
             buffer.destroy();

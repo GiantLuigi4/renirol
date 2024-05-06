@@ -19,7 +19,7 @@ public class ReniDeviceFeatures {
     public ReniImageCapabilities image(long surface) {
         VkSurfaceCapabilitiesKHR capabilitiesKHR = null;
         if (surface != 0) {
-            capabilitiesKHR = VkSurfaceCapabilitiesKHR.calloc();
+            capabilitiesKHR = VkSurfaceCapabilitiesKHR.malloc();
             VkUtil.check(KHRSurface.vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device.getDirect(VkPhysicalDevice.class), surface, capabilitiesKHR));
         }
 
@@ -29,7 +29,7 @@ public class ReniDeviceFeatures {
         if (surface != 0) {
             vkGetPhysicalDeviceSurfaceFormatsKHR(device.getDirect(VkPhysicalDevice.class), surface, countBuf, null);
             if (countBuf.get(0) != 0) {
-                VkSurfaceFormatKHR.Buffer buffer = VkSurfaceFormatKHR.calloc(countBuf.get(0));
+                VkSurfaceFormatKHR.Buffer buffer = VkSurfaceFormatKHR.malloc(countBuf.get(0));
                 vkGetPhysicalDeviceSurfaceFormatsKHR(device.getDirect(VkPhysicalDevice.class), surface, countBuf, buffer);
                 formats = buffer;
             }

@@ -173,7 +173,10 @@ public class ReniContext implements ReniDestructable {
         presentInfo.pSwapchains(buffer1);
         presentInfo.pImageIndices(indices);
         presentInfo.pWaitSemaphores(semaphores);
-        KHRSwapchain.nvkQueuePresentKHR(logical.getStandardQueue(ReniQueueType.TRANSFER).getDirect(VkQueue.class), presentInfo.address());
+        checkResize(
+                KHRSwapchain.nvkQueuePresentKHR(logical.getStandardQueue(ReniQueueType.TRANSFER).getDirect(VkQueue.class), presentInfo.address()),
+                handle
+        );
 
         presentInfo.free();
         MemoryUtil.memFree(semaphores);
@@ -238,6 +241,7 @@ public class ReniContext implements ReniDestructable {
 
     private boolean checkResize(int result, GenericWindow window) {
         if (result == KHRSwapchain.VK_ERROR_OUT_OF_DATE_KHR) {
+            logical.waitForIdle();
             resize(graphicsChain, window);
             return true;
         } else if (result != VK10.VK_SUCCESS && result != KHRSwapchain.VK_SUBOPTIMAL_KHR) {

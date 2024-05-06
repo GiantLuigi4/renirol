@@ -1,6 +1,6 @@
 package tfc.renirol.util.accel.memory.cpp;
 
-import tfc.renirol.util.ReniLib;
+import tfc.renirol.util.accel.ReniLib;
 import tfc.renirol.util.accel.memory.MemoryManager;
 
 public class BestFitManager extends MemoryManager {

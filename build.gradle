@@ -13,6 +13,10 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+    extraLibs
+}
+
 project.ext.jomlVersion = "1.10.5"
 project.ext.joml_primitivesVersion = "1.10.0"
 project.ext.steamworks4jVersion = "1.9.0"
@@ -22,22 +26,20 @@ dependencies {
     testImplementation platform('org.junit:junit-bom:5.9.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 
-    implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
+    extraLibs platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
 
     // cores
-    implementation "org.lwjgl:lwjgl"
-    runtimeOnly "org.lwjgl:lwjgl::$lwjglNatives"
+    extraLibs "org.lwjgl:lwjgl"
+    extraLibs "org.lwjgl:lwjgl::$lwjglNatives"
 
     // graphics
-    implementation "org.lwjgl:lwjgl-shaderc"
-    runtimeOnly "org.lwjgl:lwjgl-shaderc::$lwjglNatives"
-    implementation "org.lwjgl:lwjgl-vulkan"
-    implementation "org.lwjgl:lwjgl-vma"
-    runtimeOnly "org.lwjgl:lwjgl-vma::$lwjglNatives"
+    extraLibs "org.lwjgl:lwjgl-shaderc"
+    extraLibs "org.lwjgl:lwjgl-shaderc::$lwjglNatives"
+    extraLibs "org.lwjgl:lwjgl-vulkan"
 
     // windowing
-    implementation "org.lwjgl:lwjgl-glfw"
-    runtimeOnly "org.lwjgl:lwjgl-glfw::$lwjglNatives"
+    extraLibs "org.lwjgl:lwjgl-glfw"
+    extraLibs "org.lwjgl:lwjgl-glfw::$lwjglNatives"
 
     // compute
     implementation "org.lwjgl:lwjgl-opencl"
@@ -48,8 +50,8 @@ dependencies {
     runtimeOnly "org.lwjgl:lwjgl-nfd::$lwjglNatives"
 
     // image
-    implementation "org.lwjgl:lwjgl-stb"
-    runtimeOnly "org.lwjgl:lwjgl-stb::$lwjglNatives"
+    extraLibs "org.lwjgl:lwjgl-stb"
+    extraLibs "org.lwjgl:lwjgl-stb::$lwjglNatives"
 
     // font
     implementation "org.lwjgl:lwjgl-freetype"
@@ -74,13 +76,28 @@ dependencies {
     implementation "org.joml:joml-primitives:${joml_primitivesVersion}"
     implementation "com.code-disaster.steamworks4j:steamworks4j:${steamworks4jVersion}"
     implementation "com.code-disaster.steamworks4j:steamworks4j-server:${steamworks4j_serverVersion}"
+
+    configurations.implementation.extendsFrom(configurations.extraLibs)
 }
 
 test {
     useJUnitPlatform()
 }
 
+jar {
+    manifest {
+        attributes 'Main-Class': "MemoryTracker"
+    }
+    from {
+        configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
 task runApp(type:JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     main = "tfc.test.Main"
+}
+
+tasks.withType(Jar.class).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }

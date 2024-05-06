@@ -39,6 +39,7 @@ public class SwapChain implements ReniDestructable {
 
     VkSurfaceFormatKHR format;
     VkExtent2D extents;
+    boolean initialized = false;
 
     public void create(
             int width, int height,
@@ -46,7 +47,7 @@ public class SwapChain implements ReniDestructable {
             int preferredFrameCount,
             int presentMode
     ) {
-        if (swapChain != 0) destroy();
+        if (initialized) destroy();
 
         ReniImageCapabilities image = device.hardware.features.image(surface);
 
@@ -131,6 +132,7 @@ public class SwapChain implements ReniDestructable {
                 throw err;
             }
 
+            image.destroy();
             if (graphics != transfer)
                 MemoryUtil.memFree(indicesBuf);
             createInfo.free();
@@ -172,23 +174,26 @@ public class SwapChain implements ReniDestructable {
                 buffers.add(new FrameBuffer(device.getDirect(VkDevice.class), img, buf.get(0), this));
             }
 
-            image.destroy();
             MemoryUtil.memFree(buffer);
             MemoryUtil.memFree(buf);
             MemoryUtil.memFree(count);
         }
         this.frameCount = preferredFrameCount;
         this.presentMode = presentMode;
+
+        initialized = true;
     }
 
     @Override
     public void destroy() {
-        for (FrameBuffer buffer : buffers)
-            buffer.destroy();
-        buffers.clear();
-        extents.free();
-        KHRSwapchain.nvkDestroySwapchainKHR(device.getDirect(VkDevice.class), swapChain, 0);
-        swapChain = 0;
+        if (initialized) {
+            initialized = false;
+            for (FrameBuffer buffer : buffers)
+                buffer.destroy();
+            buffers.clear();
+            extents.free();
+            KHRSwapchain.nvkDestroySwapchainKHR(device.getDirect(VkDevice.class), swapChain, 0);
+        }
     }
 
     public int acquire(IntBuffer index, long semaphore) {

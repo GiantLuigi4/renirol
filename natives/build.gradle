@@ -26,8 +26,8 @@ library {
 }
 
 tasks.register("build_release") {
-    tasks.compileReleaseX86Cpp.doLast {library.baseName = "renirol-natives-x86"}
-    tasks.named("compileReleaseX86-64Cpp").get().doLast {library.baseName = "renirol-natives-x86-64"}
+    tasks.compileReleaseX86Cpp.doLast {library.baseName = "renirol_natives_x86"}
+    tasks.named("compileReleaseX86-64Cpp").get().doLast {library.baseName = "renirol_natives_x86_64"}
 
     tasks.build_release.finalizedBy(tasks.named("compileReleaseX86Cpp").get())
     tasks.build_release.finalizedBy(tasks.named("assembleReleaseX86").get())
