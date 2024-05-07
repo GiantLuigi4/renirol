@@ -90,7 +90,7 @@ public class WinNTWindow extends GenericWindow {
 
     @Override
     public int getHeight() {
-        return rect.top() - rect.bottom();
+        return rect.bottom() - rect.top();
     }
 
     @Override

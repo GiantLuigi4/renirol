@@ -107,14 +107,18 @@ public class GPUBuffer implements ReniDestructable {
     }
 
     public void upload(int offset, ByteBuffer data) {
+        upload(offset, data.limit() - data.position(), data);
+    }
+
+    public void upload(int offset, int length, ByteBuffer data) {
         VkDevice device = this.device.getDirect(VkDevice.class);
 
         PointerBuffer pData = MemoryUtil.memAllocPointer(1);
-        VkUtil.check(VK10.vkMapMemory(device, memory, offset, data.capacity(), 0, pData));
+        VkUtil.check(VK10.vkMapMemory(device, memory, offset, length, 0, pData));
         long dataptr = pData.get(0);
         MemoryUtil.memFree(pData);
 
-        ByteBuffer buf = MemoryUtil.memByteBuffer(dataptr, data.capacity());
+        ByteBuffer buf = MemoryUtil.memByteBuffer(dataptr, length);
         buf.put(data);
         VK10.vkUnmapMemory(device, memory);
     }

@@ -89,7 +89,7 @@ jar {
         attributes 'Main-Class': "MemoryTracker"
     }
     from {
-        configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
+//        configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
     }
 }
 
