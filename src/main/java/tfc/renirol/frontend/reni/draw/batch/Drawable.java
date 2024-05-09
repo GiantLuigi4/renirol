@@ -8,6 +8,6 @@ public abstract class Drawable {
 	public abstract void draw(CommandBuffer buffer, GraphicsPipeline pipeline, int start, int end);
 	public abstract void draw(CommandBuffer buffer, GraphicsPipeline pipeline);
 	public abstract int size();
-	public abstract void bind();
+	public abstract void bind(CommandBuffer buffer);
 }
 //@formatter:on

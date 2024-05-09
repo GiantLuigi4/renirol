@@ -13,7 +13,7 @@ public class InstanceList {
 	public void draw(CommandBuffer buffer, GraphicsPipeline pipeline, int maxPerCall) {
 		for (Map.Entry<InstanceKey, ArrayList<Instanceable>> instanceKeyArrayListEntry : instances.entrySet()) {
 			InstanceKey key = instanceKeyArrayListEntry.getKey();
-			key.bind();
+			key.bind(buffer);
 			ArrayList<Instanceable> instanceables = instanceKeyArrayListEntry.getValue();
 			int actualI = 0;
 			int i;

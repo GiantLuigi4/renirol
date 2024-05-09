@@ -19,7 +19,7 @@ public class BatchList {
 	public Drawable draw(CommandBuffer buffer, GraphicsPipeline pipeline, Drawable last) {
 		for (Drawable drawable : drawables) {
 			if (last != drawable) {
-				drawable.bind();
+				drawable.bind(buffer);
 				last = drawable;
 			}
 			drawable.draw(buffer, pipeline);

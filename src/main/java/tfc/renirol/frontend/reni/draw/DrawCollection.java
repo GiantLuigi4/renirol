@@ -29,7 +29,7 @@ public abstract class DrawCollection extends Drawable {
 	}
 	
 	@Override
-	public final void bind() {
+	public final void bind(CommandBuffer buffer) {
 		// no-op
 	}
 }

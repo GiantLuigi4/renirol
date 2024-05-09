@@ -42,7 +42,7 @@ public class InstanceCollection extends DrawCollection {
         } else {
 //			throw new RuntimeException("Batched objects cannot be instanced");
             setupState(() -> {
-                drawable.bind();
+                drawable.bind(buffer);
                 drawable.draw(buffer, pipeline);
             });
         }
