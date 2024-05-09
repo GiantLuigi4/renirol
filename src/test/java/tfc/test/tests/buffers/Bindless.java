@@ -198,8 +198,8 @@ class Bindless {
                 );
                 buffer.bindVbo(0, vbo);
                 buffer.bindIbo(IndexSize.INDEX_16, ibo);
-                buffer.vkCmdDrawIndexed(
-                        0, 0,
+                buffer.drawIndexed(
+                        0,
                         0, 1,
                         0, 6
                 );

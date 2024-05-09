@@ -9,6 +9,7 @@ import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.hardware.util.ReniDestructable;
 import tfc.renirol.frontend.rendering.ReniQueue;
 import tfc.renirol.frontend.rendering.enums.BindPoint;
+import tfc.renirol.frontend.rendering.enums.flags.ShaderStageFlags;
 import tfc.renirol.frontend.rendering.enums.flags.SwapchainUsage;
 import tfc.renirol.frontend.rendering.enums.modes.CompareOp;
 import tfc.renirol.frontend.rendering.enums.modes.CullMode;
@@ -24,6 +25,7 @@ import tfc.renirol.frontend.rendering.enums.ImageLayout;
 import tfc.renirol.frontend.rendering.pass.RenderPass;
 import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorSet;
 
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
@@ -139,8 +141,6 @@ public class CommandBuffer implements ReniDestructable {
         renderPassInfo.sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
     }
 
-    // TODO: begin pass method
-
     public void reset() {
         VK10.vkResetCommandBuffer(cmd, 0);
     }
@@ -176,6 +176,8 @@ public class CommandBuffer implements ReniDestructable {
         viewport(x, y, width, height, minDepth, maxDepth);
         scissor((int) x, (int) y, (int) width, (int) height);
     }
+
+    GraphicsPipeline boundPipe;
 
     public void bindPipe(GraphicsPipeline pipeline) {
         VK10.vkCmdBindPipeline(cmd, VK10.VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.handle);
@@ -399,15 +401,13 @@ public class CommandBuffer implements ReniDestructable {
 
     public void bindIbo(IndexSize size, GPUBuffer ebo) {
         VK13.vkCmdBindIndexBuffer(
-                cmd,
-                ebo.getHandle(),
-                0,
-                size.id
+                cmd, ebo.getHandle(),
+                0, size.id
         );
     }
 
-    public void vkCmdDrawIndexed(
-            int firstVert, int vertices,
+    public void drawIndexed(
+            int firstVert,
             int firstInstance, int count,
             int firstIndex, int indices
     ) {
@@ -445,5 +445,31 @@ public class CommandBuffer implements ReniDestructable {
 
     public <T> T getDirect(Class<T> clazz) {
         return (T) cmd;
+    }
+
+    public void pushConstants(
+            long layout, ShaderStageFlags[] stages,
+            int start, int size,
+            ByteBuffer data
+    ) {
+        int flags = 0;
+        for (ShaderStageFlags stage : stages)
+            flags |= stage.bits;
+        VK13.nvkCmdPushConstants(
+                cmd, layout,
+                flags, start, size,
+                MemoryUtil.memAddress(data)
+        );
+    }
+
+    public void bufferData(
+            GPUBuffer buffer,
+            int start, int amount,
+            ByteBuffer data
+    ) {
+        VK13.nvkCmdUpdateBuffer(
+                cmd, buffer.getHandle(),
+                start, amount, MemoryUtil.memAddress(data)
+        );
     }
 }

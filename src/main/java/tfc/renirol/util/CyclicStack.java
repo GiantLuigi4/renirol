@@ -56,7 +56,7 @@ public class CyclicStack<T> implements Iterable<T> {
 
         @Override
         public boolean hasNext() {
-            return !curr.end;
+            return !curr.end || !started;
         }
 
         @Override

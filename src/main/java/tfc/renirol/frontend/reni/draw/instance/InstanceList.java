@@ -22,9 +22,9 @@ public class InstanceList {
 				for (; i < v; i++)
 					instanceables.get(actualI++).setup(buffer, i);
 
+				key.prepareCall(buffer);
 				key.draw(buffer, pipeline, i);
 			}
-			key.prepareCall(buffer);
 		}
 	}
 
