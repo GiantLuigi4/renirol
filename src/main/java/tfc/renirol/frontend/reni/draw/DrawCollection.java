@@ -4,7 +4,7 @@ import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
 import tfc.renirol.frontend.reni.draw.batch.Drawable;
 
-public abstract class DrawCollection extends Drawable {
+public abstract class DrawCollection implements Drawable {
 	public GraphicsPipeline pipeline;
 
 	//@formatter:off

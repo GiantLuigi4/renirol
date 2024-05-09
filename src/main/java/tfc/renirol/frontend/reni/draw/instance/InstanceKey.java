@@ -1,10 +1,10 @@
 package tfc.renirol.frontend.reni.draw.instance;
 
 import tfc.renirol.frontend.rendering.command.CommandBuffer;import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;//@formatter:off
-public abstract class InstanceKey {
-	@Override public abstract int hashCode();
-	@Override public abstract boolean equals(Object obj);
-	public abstract void bind(CommandBuffer buffer);
-	public abstract void draw(CommandBuffer buffer, GraphicsPipeline pipeline, int count);
+public interface InstanceKey {
+	int hashCode();
+	boolean equals(Object obj);
+	void bind(CommandBuffer buffer);
+	void draw(CommandBuffer buffer, GraphicsPipeline pipeline, int count);
 }
 //@formatter:on
