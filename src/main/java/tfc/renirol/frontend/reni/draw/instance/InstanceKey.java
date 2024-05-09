@@ -6,5 +6,7 @@ public interface InstanceKey {
 	boolean equals(Object obj);
 	void bind(CommandBuffer buffer);
 	void draw(CommandBuffer buffer, GraphicsPipeline pipeline, int count);
+	// upload data from here
+	void prepareCall(CommandBuffer buffer);
 }
 //@formatter:on
