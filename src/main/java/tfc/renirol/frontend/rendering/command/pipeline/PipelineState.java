@@ -99,26 +99,15 @@ public class PipelineState {
         multisampling.alphaToCoverageEnable(false); // Optional
         multisampling.alphaToOneEnable(false); // Optional
 
-        // alpha blending
-        colorBlendAttachment.colorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
-        colorBlendAttachment.blendEnable(false);
-        colorBlendAttachment.srcColorBlendFactor(VK_BLEND_FACTOR_ONE); // Optional
-        colorBlendAttachment.dstColorBlendFactor(VK_BLEND_FACTOR_ZERO); // Optional
-        colorBlendAttachment.colorBlendOp(VK_BLEND_OP_ADD); // Optional
-        colorBlendAttachment.srcAlphaBlendFactor(VK_BLEND_FACTOR_ONE); // Optional
-        colorBlendAttachment.dstAlphaBlendFactor(VK_BLEND_FACTOR_ZERO); // Optional
-        colorBlendAttachment.alphaBlendOp(VK_BLEND_OP_ADD); // Optional
-
         // color blend
         colorBlending.sType(VK10.VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
         colorBlending.logicOpEnable(false);
         colorBlending.logicOp(VK_LOGIC_OP_COPY); // Optional
-        colorBlending.attachmentCount(1);
-        colorBlending.pAttachments(colorBlendAttachment);
         colorBlending.blendConstants().put(0, 0.0f); // Optional
         colorBlending.blendConstants().put(1, 0.0f); // Optional
         colorBlending.blendConstants().put(2, 0.0f); // Optional
         colorBlending.blendConstants().put(3, 0.0f); // Optional
+        colorAttachmentCount(1);
 
         // https://vulkan-tutorial.com/Drawing_a_triangle/Graphics_pipeline_basics/Fixed_functions
 
@@ -138,6 +127,27 @@ public class PipelineState {
         depthStencil.stencilTestEnable(false);
     }
 
+    public PipelineState colorAttachmentCount(int count) {
+        colorBlendAttachment.free();
+        colorBlending.attachmentCount(count);
+
+        colorBlendAttachment = VkPipelineColorBlendAttachmentState.calloc(count);
+        colorBlending.pAttachments(colorBlendAttachment);
+
+        for (int i = 0; i < count; i++) {
+            colorBlendAttachment.get(i).colorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+            colorBlendAttachment.get(i).blendEnable(false);
+            colorBlendAttachment.get(i).srcColorBlendFactor(VK_BLEND_FACTOR_ONE); // Optional
+            colorBlendAttachment.get(i).dstColorBlendFactor(VK_BLEND_FACTOR_ZERO); // Optional
+            colorBlendAttachment.get(i).colorBlendOp(VK_BLEND_OP_ADD); // Optional
+            colorBlendAttachment.get(i).srcAlphaBlendFactor(VK_BLEND_FACTOR_ONE); // Optional
+            colorBlendAttachment.get(i).dstAlphaBlendFactor(VK_BLEND_FACTOR_ZERO); // Optional
+            colorBlendAttachment.get(i).alphaBlendOp(VK_BLEND_OP_ADD); // Optional
+        }
+
+        return this;
+    }
+
     public PipelineState depthTest(boolean value) {
         depthStencil.depthTestEnable(value);
         return this;
@@ -148,26 +158,26 @@ public class PipelineState {
         return this;
     }
 
-    public void alphaBlending() {
-        colorBlendAttachment.colorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
-        colorBlendAttachment.blendEnable(true);
-        colorBlendAttachment.srcColorBlendFactor(VK_BLEND_FACTOR_SRC_ALPHA);
-        colorBlendAttachment.dstColorBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);
-        colorBlendAttachment.colorBlendOp(VK_BLEND_OP_ADD);
-        colorBlendAttachment.srcAlphaBlendFactor(VK_BLEND_FACTOR_ONE);
-        colorBlendAttachment.dstAlphaBlendFactor(VK_BLEND_FACTOR_ZERO);
-        colorBlendAttachment.alphaBlendOp(VK_BLEND_OP_ADD);
+    public void alphaBlending(int attachment) {
+        colorBlendAttachment.get(attachment).colorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+        colorBlendAttachment.get(attachment).blendEnable(true);
+        colorBlendAttachment.get(attachment).srcColorBlendFactor(VK_BLEND_FACTOR_SRC_ALPHA);
+        colorBlendAttachment.get(attachment).dstColorBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);
+        colorBlendAttachment.get(attachment).colorBlendOp(VK_BLEND_OP_ADD);
+        colorBlendAttachment.get(attachment).srcAlphaBlendFactor(VK_BLEND_FACTOR_ONE);
+        colorBlendAttachment.get(attachment).dstAlphaBlendFactor(VK_BLEND_FACTOR_ZERO);
+        colorBlendAttachment.get(attachment).alphaBlendOp(VK_BLEND_OP_ADD);
     }
 
-    public void additiveBlending() {
-        colorBlendAttachment.colorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
-        colorBlendAttachment.blendEnable(true);
-        colorBlendAttachment.srcColorBlendFactor(VK_BLEND_FACTOR_ONE);
-        colorBlendAttachment.dstColorBlendFactor(VK_BLEND_FACTOR_DST_ALPHA);
-        colorBlendAttachment.colorBlendOp(VK_BLEND_OP_ADD);
-        colorBlendAttachment.srcAlphaBlendFactor(VK_BLEND_FACTOR_ONE);
-        colorBlendAttachment.dstAlphaBlendFactor(VK_BLEND_FACTOR_ZERO);
-        colorBlendAttachment.alphaBlendOp(VK_BLEND_OP_ADD);
+    public void additiveBlending(int attachment) {
+        colorBlendAttachment.get(attachment).colorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+        colorBlendAttachment.get(attachment).blendEnable(true);
+        colorBlendAttachment.get(attachment).srcColorBlendFactor(VK_BLEND_FACTOR_ONE);
+        colorBlendAttachment.get(attachment).dstColorBlendFactor(VK_BLEND_FACTOR_DST_ALPHA);
+        colorBlendAttachment.get(attachment).colorBlendOp(VK_BLEND_OP_ADD);
+        colorBlendAttachment.get(attachment).srcAlphaBlendFactor(VK_BLEND_FACTOR_ONE);
+        colorBlendAttachment.get(attachment).dstAlphaBlendFactor(VK_BLEND_FACTOR_ZERO);
+        colorBlendAttachment.get(attachment).alphaBlendOp(VK_BLEND_OP_ADD);
     }
 
     LongBuffer layoutDescBuffer = MemoryUtil.memAllocLong(1);

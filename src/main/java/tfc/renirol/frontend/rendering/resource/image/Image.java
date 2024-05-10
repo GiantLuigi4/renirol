@@ -68,7 +68,7 @@ public class Image implements ReniDestructable {
         imageInfo.initialLayout(VK13.VK_IMAGE_LAYOUT_UNDEFINED);
 
 //        imageInfo.usage(VK13.VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK13.VK_IMAGE_USAGE_SAMPLED_BIT);
-        imageInfo.usage(VK13.VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+        imageInfo.usage(usage.id);
         imageInfo.sharingMode(VK13.VK_SHARING_MODE_EXCLUSIVE);
 
         imageInfo.samples(VK13.VK_SAMPLE_COUNT_1_BIT);

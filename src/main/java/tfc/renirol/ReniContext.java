@@ -38,7 +38,7 @@ public class ReniContext implements ReniDestructable {
     private long surface;
     private ChainBuffer buffer;
     private SwapChain graphicsChain;
-    private Image depthChain;
+    private List<Image> additional = new ArrayList<>();
 
     public ReniContext() {
     }
@@ -136,9 +136,17 @@ public class ReniContext implements ReniDestructable {
         semaphoreB = new Semaphore(logical);
     }
 
+    int depthIdx = 0;
+
     public void createDepth() {
-        depthChain = new Image(logical).setUsage(SwapchainUsage.DEPTH);
-        buffer = new ChainBuffer(graphicsChain, depthChain);
+        additional.add(new Image(logical).setUsage(SwapchainUsage.DEPTH));
+        buffer = new ChainBuffer(graphicsChain, additional.toArray(new Image[0]));
+        depthIdx = additional.size() - 1;
+    }
+
+    public void addBuffer(Image image) {
+        additional.add(image);
+        buffer = new ChainBuffer(graphicsChain, additional.toArray(new Image[0]));
     }
 
     public void setupOffscreen() {
@@ -299,6 +307,6 @@ public class ReniContext implements ReniDestructable {
     }
 
     public Image depthBuffer() {
-        return depthChain;
+        return additional.get(depthIdx);
     }
 }
