@@ -5,6 +5,8 @@ import org.lwjgl.system.windows.*;
 import tfc.renirol.ReniContext;
 import tfc.renirol.Renirol;
 import tfc.renirol.frontend.windowing.GenericWindow;
+import tfc.renirol.frontend.windowing.listener.KeyboardListener;
+import tfc.renirol.frontend.windowing.listener.MouseListener;
 import tfc.renirol.util.windows.ReniUser32;
 
 import java.nio.ByteBuffer;
@@ -141,6 +143,8 @@ public class WinNTWindow extends GenericWindow {
 
     public void captureMouse() {
         ReniUser32.SetCapture(hwnd);
+        System.out.println(hwnd);
+        System.out.println(ReniUser32.GetCapture());
     }
 
     public void freeMouse() {
@@ -150,5 +154,15 @@ public class WinNTWindow extends GenericWindow {
     @Override
     public ReniContext getContext() {
         return context;
+    }
+
+    @Override
+    public void addKeyboardListener(KeyboardListener listener) {
+        throw new RuntimeException("TODO");
+    }
+
+    @Override
+    public void addMouseListener(MouseListener listener) {
+        throw new RuntimeException("TODO");
     }
 }

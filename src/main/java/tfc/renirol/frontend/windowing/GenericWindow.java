@@ -2,6 +2,8 @@ package tfc.renirol.frontend.windowing;
 
 import tfc.renirol.ReniContext;
 import tfc.renirol.Renirol;
+import tfc.renirol.frontend.windowing.listener.KeyboardListener;
+import tfc.renirol.frontend.windowing.listener.MouseListener;
 
 public abstract class GenericWindow {
     public final WindowManager manager;
@@ -35,4 +37,8 @@ public abstract class GenericWindow {
     public abstract void setName(String name);
 
     public abstract ReniContext getContext();
+
+    public abstract void addKeyboardListener(KeyboardListener listener);
+
+    public abstract void addMouseListener(MouseListener listener);
 }

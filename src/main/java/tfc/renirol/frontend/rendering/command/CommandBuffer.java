@@ -11,6 +11,7 @@ import tfc.renirol.frontend.rendering.ReniQueue;
 import tfc.renirol.frontend.rendering.enums.BindPoint;
 import tfc.renirol.frontend.rendering.enums.flags.ShaderStageFlags;
 import tfc.renirol.frontend.rendering.enums.flags.SwapchainUsage;
+import tfc.renirol.frontend.rendering.enums.masks.AccessMask;
 import tfc.renirol.frontend.rendering.enums.modes.CompareOp;
 import tfc.renirol.frontend.rendering.enums.modes.CullMode;
 import tfc.renirol.frontend.rendering.enums.modes.FrontFace;
@@ -25,6 +26,7 @@ import tfc.renirol.frontend.rendering.enums.ImageLayout;
 import tfc.renirol.frontend.rendering.pass.RenderPass;
 import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorSet;
 
+import java.lang.reflect.AccessFlag;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;

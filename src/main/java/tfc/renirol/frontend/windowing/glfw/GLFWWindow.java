@@ -5,6 +5,8 @@ import org.lwjgl.system.CallbackI;
 import tfc.renirol.ReniContext;
 import tfc.renirol.Renirol;
 import tfc.renirol.frontend.windowing.GenericWindow;
+import tfc.renirol.frontend.windowing.listener.KeyboardListener;
+import tfc.renirol.frontend.windowing.listener.MouseListener;
 import tfc.renirol.util.QuadConsumer;
 
 import java.util.function.BiConsumer;
@@ -163,5 +165,35 @@ public class GLFWWindow extends GenericWindow {
     @Override
     public ReniContext getContext() {
         return context;
+    }
+
+    @Override
+    public void addKeyboardListener(KeyboardListener listener) {
+        GLFW.glfwSetKeyCallback(handle, new GLFWKeyCallback() {
+            @Override
+            public void invoke(long window, int key, int scancode, int action, int mods) {
+                switch (action) {
+                    case GLFW.GLFW_PRESS -> {
+                        listener.keyPress(key, scancode, mods);
+                    }
+                    case GLFW.GLFW_RELEASE -> {
+                        listener.keyRelease(key, scancode, mods);
+                    }
+                    case GLFW.GLFW_REPEAT -> {
+                        listener.keyType(key, scancode, mods);
+                    }
+                }
+            }
+        });
+    }
+
+    @Override
+    public void addMouseListener(MouseListener listener) {
+        GLFW.glfwSetCursorPosCallback(handle, new GLFWCursorPosCallback() {
+            @Override
+            public void invoke(long window, double xpos, double ypos) {
+                listener.mouseMove(xpos, ypos);
+            }
+        });
     }
 }

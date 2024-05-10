@@ -4,6 +4,7 @@ import org.lwjgl.vulkan.VK13;
 import org.lwjgl.vulkan.VkVertexInputAttributeDescription;
 import org.lwjgl.vulkan.VkVertexInputBindingDescription;
 import tfc.renirol.frontend.hardware.util.ReniDestructable;
+import tfc.renirol.frontend.rendering.enums.flags.AdvanceRate;
 import tfc.renirol.frontend.rendering.enums.format.AttributeFormat;
 import tfc.renirol.frontend.rendering.enums.IndexSize;
 
@@ -13,6 +14,7 @@ public class BufferDescriptor implements ReniDestructable {
     public final DataFormat format;
     protected VkVertexInputBindingDescription bindingDescription = VkVertexInputBindingDescription.calloc();
     protected final ArrayList<VkVertexInputAttributeDescription> attribs = new ArrayList<>();
+    public AdvanceRate advanceRate = AdvanceRate.PER_VERTEX;
 
     public BufferDescriptor(IndexSize size) {
         format = null;
@@ -22,18 +24,21 @@ public class BufferDescriptor implements ReniDestructable {
         this.format = format;
     }
 
+    public BufferDescriptor advance(AdvanceRate rate) {
+        this.advanceRate = rate;
+        return this;
+    }
+
     public void describe(int binding, int stride) {
         bindingDescription.binding(binding);
         bindingDescription.stride(stride);
-        // TODO: what the heck?
-        bindingDescription.inputRate(VK13.VK_VERTEX_INPUT_RATE_VERTEX);
+        bindingDescription.inputRate(advanceRate.id);
     }
 
     public void describe(int binding) {
         bindingDescription.binding(binding);
         bindingDescription.stride(format.stride);
-        // TODO: what the heck?
-        bindingDescription.inputRate(VK13.VK_VERTEX_INPUT_RATE_VERTEX);
+        bindingDescription.inputRate(advanceRate.id);
     }
 
     public void clearAttribs() {
