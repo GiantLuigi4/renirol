@@ -20,6 +20,7 @@ import tfc.renirol.frontend.enums.modes.image.WrapMode;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.enums.flags.SwapchainUsage;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
+import tfc.renirol.frontend.rendering.ReniQueue;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
 import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
@@ -44,6 +45,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class Atlas {
@@ -69,25 +71,13 @@ public class Atlas {
         return img;
     }
 
-    class Glyph {
-        int width, height, x, y;
-
-        public Glyph(int width, int height, int x, int y) {
-            this.width = width;
-            this.height = height;
-            this.x = x;
-            this.y = y;
-        }
-    }
+    // atlas generation variables
+    // TODO: enable positioning glyphs in blank spaces between other glyphs or smth
+    int lastX = 0;
+    int lastY = 0;
+    int rwHeight = 0;
 
     final int width, height;
-    List<Row> rows = new ArrayList<>();
-
-    class Row {
-        List<Glyph> glyphs = new ArrayList<>();
-        int startY;
-        int height;
-    }
 
     final ReniLogicalDevice logicalDevice;
     final DescriptorSet set;
@@ -106,8 +96,8 @@ public class Atlas {
     final GPUBuffer vbo;
 
     public Atlas(ReniLogicalDevice logicalDevice, int width, int height) {
-        img = new Image(logicalDevice).setUsage(SwapchainUsage.COLOR);
-        img.create(this.width = width, this.height = height, VK13.VK_FORMAT_R8_SRGB);
+        img = new Image(logicalDevice).setUsage(SwapchainUsage.GENERIC);
+        img.create(this.width = width, this.height = height, VK13.VK_FORMAT_R8G8B8A8_SRGB);
 
         vbo = new GPUBuffer(
                 logicalDevice, BufferUsage.VERTEX,
@@ -183,10 +173,10 @@ public class Atlas {
         RenderPassInfo passInfo = new RenderPassInfo(logicalDevice);
         pass = passInfo.colorAttachment(
                 Operation.PERFORM, Operation.PERFORM,
-                ImageLayout.GENERAL,
-                ImageLayout.GENERAL,
-                VK13.VK_FORMAT_R8_SRGB
-        ).subpass().dependency().create();
+                ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
+                ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
+                VK13.VK_FORMAT_R8G8B8A8_SRGB
+        ).dependency().subpass().create();
         passInfo.destroy();
 
         pipeline = new GraphicsPipeline(state, pass, VERT, FRAG);
@@ -201,7 +191,59 @@ public class Atlas {
     DescriptorPool pool;
     GraphicsPipeline pipeline;
 
-    public void addGlyph(ReniGlyph glyph) {
+    public boolean addGlyph(ReniGlyph glyph) {
+        return add(glyph);
+    }
+
+    public static String read(InputStream is) {
+        try {
+            byte[] dat = is.readAllBytes();
+            try {
+                is.close();
+            } catch (Throwable ignored) {
+            }
+            return new String(dat);
+        } catch (Throwable err) {
+            throw new RuntimeException(err);
+        }
+    }
+
+    HashMap<Character, float[]> glyphBounds = new HashMap<>();
+    HashMap<Integer, float[]> glyphBoundsByIndex = new HashMap<>();
+
+    boolean add(ReniGlyph glyph) {
+        if (glyphBoundsByIndex.containsKey(glyph.index)) {
+            glyphBounds.put(glyph.symbol, glyphBoundsByIndex.get(glyph.index));
+            return true;
+        }
+
+        if (lastX + glyph.width >= width) {
+            lastX = 0;
+            lastY += rwHeight;
+            rwHeight = 0;
+        }
+        if (lastY + glyph.height >= height) return false;
+
+        rwHeight = Math.max(glyph.height, rwHeight);
+
+        blitGlyph(glyph);
+
+        float[] bounds = new float[4];
+        bounds[0] = lastX / (float) width;
+        bounds[1] = lastY / (float) height;
+        bounds[2] = glyph.width / (float) width;
+        bounds[3] = glyph.height / (float) height;
+        glyphBounds.put(glyph.symbol, bounds);
+
+        lastX += glyph.width;
+
+        return true;
+    }
+
+    private void blitGlyph(ReniGlyph  glyph) {
+        if (glyph.buffer == null)
+            return;
+
         float texelX = 1f / width;
         float texelY = 1f / height;
 
@@ -224,26 +266,41 @@ public class Atlas {
 
         ByteBuffer data = vbo.createByteBuf();
         FloatBuffer fb = data.asFloatBuffer();
-        fb.put(new float[]{
-                1, 1, 1, 1,
-                0, 1, 0, 1,
-                0, 0, 0, 0,
 
-                1, 0, 1, 0,
-                1, 1, 1, 1,
-                0, 0, 0, 0,
+        float left = lastX;
+        float top = lastY;
+        float right = left + glyph.width;
+        float bottom = top + glyph.height;
+
+        left *= texelX;
+        top *= texelY;
+        right *= texelX;
+        bottom *= texelY;
+        fb.put(new float[]{
+                right, bottom, 1, 1,
+                left, bottom, 0, 1,
+                left, top, 0, 0,
+
+                right, top, 1, 0,
+                right, bottom, 1, 1,
+                left, top, 0, 0,
         });
+
+        buffer.begin();
+        buffer.bufferData(vbo, 0, 4 * 4 * 6, data);
+        buffer.end();
+        buffer.submit(logicalDevice.getStandardQueue(ReniQueueType.TRANSFER));
+        buffer.reset();
 
         buffer.begin();
 
         buffer.startLabel("atlas", 0, 0.5f, 0, 0.5f);
         buffer.transition(
                 img.getHandle(), StageMask.TOP_OF_PIPE, StageMask.GRAPHICS,
-                ImageLayout.COLOR_ATTACHMENT_OPTIMAL, ImageLayout.GENERAL
+                ImageLayout.SHADER_READONLY, ImageLayout.COLOR_ATTACHMENT_OPTIMAL
         );
 
         buffer.noClear();
-        buffer.bufferData(vbo, 0, 4 * 4 * 6, data);
         buffer.beginPass(pass, fbo, extents);
         buffer.bindPipe(pipeline);
         buffer.bindDescriptor(
@@ -258,7 +315,7 @@ public class Atlas {
 
         buffer.transition(
                 img.getHandle(), StageMask.GRAPHICS, StageMask.TOP_OF_PIPE,
-                ImageLayout.GENERAL, ImageLayout.COLOR_ATTACHMENT_OPTIMAL
+                ImageLayout.COLOR_ATTACHMENT_OPTIMAL, ImageLayout.SHADER_READONLY
         );
 
         buffer.endLabel();
@@ -271,19 +328,6 @@ public class Atlas {
         tx.destroy();
 
         MemoryUtil.memFree(data);
-    }
-
-    public static String read(InputStream is) {
-        try {
-            byte[] dat = is.readAllBytes();
-            try {
-                is.close();
-            } catch (Throwable ignored) {
-            }
-            return new String(dat);
-        } catch (Throwable err) {
-            throw new RuntimeException(err);
-        }
     }
 
     public void destroy() {
@@ -300,5 +344,11 @@ public class Atlas {
         frameBuffer.destroy();
         img.destroy();
         compiler.destroy();
+    }
+
+    public void reset() {
+        lastX = 0;
+        lastY = 0;
+        rwHeight = 0;
     }
 }

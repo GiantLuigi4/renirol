@@ -56,8 +56,8 @@ float px(float distance) {
     float width = 0.2;
     float edge = 0.05;
     float alpha = smoothstep(width, width + edge, distance);
-    width += 0.15;
-    alpha = min(alpha, smoothstep(width, width - edge, distance));
+//    width += 0.15;
+//    alpha = min(alpha, smoothstep(width, width - edge, distance));
     return alpha;
 }
 

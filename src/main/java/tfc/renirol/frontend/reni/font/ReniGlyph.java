@@ -1,17 +1,23 @@
 package tfc.renirol.frontend.reni.font;
 
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.freetype.FT_Face;
 import org.lwjgl.util.freetype.FT_GlyphSlot;
 import org.lwjgl.util.freetype.FreeType;
+import tfc.renirol.frontend.hardware.util.ReniDestructable;
 
 import java.nio.ByteBuffer;
 
-public class ReniGlyph {
+public class ReniGlyph implements ReniDestructable {
     public final ByteBuffer buffer;
     public final int left, top;
     public final int width, height;
+    public final char symbol;
+    public final int index;
 
-    public ReniGlyph(FT_Face face, int index, int flags) {
+    public ReniGlyph(char symbol, FT_Face face, int index, int flags) {
+        this.index = index;
+        this.symbol = symbol;
         int error = FreeType.FT_Load_Glyph(
                 face, index,
                 flags
@@ -29,5 +35,9 @@ public class ReniGlyph {
                 (width = face.glyph().bitmap().width()) *
                         (height = face.glyph().bitmap().rows())
         );
+    }
+
+    public void destroy() {
+        MemoryUtil.memFree(buffer);
     }
 }

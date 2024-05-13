@@ -79,7 +79,7 @@ public class ReniFont {
 
     public ReniGlyph glyph(char code, int flags) {
         return new ReniGlyph(
-                face, FreeType.FT_Get_Char_Index(face, code), flags
+                code, face, FreeType.FT_Get_Char_Index(face, code), flags
         );
     }
 
