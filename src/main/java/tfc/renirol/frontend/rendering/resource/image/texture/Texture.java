@@ -8,15 +8,15 @@ import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.hardware.util.ReniDestructable;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
-import tfc.renirol.frontend.rendering.enums.BufferUsage;
-import tfc.renirol.frontend.rendering.enums.ImageLayout;
-import tfc.renirol.frontend.rendering.enums.format.BitDepth;
-import tfc.renirol.frontend.rendering.enums.format.TextureChannels;
-import tfc.renirol.frontend.rendering.enums.format.TextureFormat;
-import tfc.renirol.frontend.rendering.enums.masks.StageMask;
-import tfc.renirol.frontend.rendering.enums.modes.image.FilterMode;
-import tfc.renirol.frontend.rendering.enums.modes.image.MipmapMode;
-import tfc.renirol.frontend.rendering.enums.modes.image.WrapMode;
+import tfc.renirol.frontend.enums.BufferUsage;
+import tfc.renirol.frontend.enums.ImageLayout;
+import tfc.renirol.frontend.enums.format.BitDepth;
+import tfc.renirol.frontend.enums.format.TextureChannels;
+import tfc.renirol.frontend.enums.format.TextureFormat;
+import tfc.renirol.frontend.enums.masks.StageMask;
+import tfc.renirol.frontend.enums.modes.image.FilterMode;
+import tfc.renirol.frontend.enums.modes.image.MipmapMode;
+import tfc.renirol.frontend.enums.modes.image.WrapMode;
 import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
 
 import java.io.InputStream;
@@ -68,13 +68,28 @@ public class Texture implements ReniDestructable {
         create(device);
     }
 
+    public Texture(ReniLogicalDevice device, int width, int height, TextureChannels channels, BitDepth depth, ByteBuffer data) {
+        this.device = device.getDirect(VkDevice.class);
+
+        this.channels = channels;
+        this.bitDepth = depth;
+        this.data = loadRaw(device, width, height, channels, depth, data);
+        create(device);
+    }
+
     long memory = 0;
 
     protected void create(ReniLogicalDevice device) {
+        int format;
+
         VkImageCreateInfo imageInfo = VkImageCreateInfo.calloc();
         imageInfo.sType(VK13.VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
         imageInfo.imageType(VK13.VK_IMAGE_TYPE_2D);
-        imageInfo.format(VK13.VK_FORMAT_R8G8B8A8_SRGB);
+        imageInfo.format(format = switch (channelCount) {
+            case 1 -> VK13.VK_FORMAT_R8_SRGB;
+            case 4 -> VK13.VK_FORMAT_R8G8B8A8_SRGB;
+            default -> throw new RuntimeException("NYI");
+        });
         imageInfo.extent().width(width);
         imageInfo.extent().height(height);
         imageInfo.extent().depth(1);
@@ -125,6 +140,7 @@ public class Texture implements ReniDestructable {
             inf.imageSubresource().aspectMask(VK13.VK_IMAGE_ASPECT_COLOR_BIT);
 
             buffer.begin();
+            buffer.startLabel("upload", 0, 0, 0.5f, 0.5f);
             buffer.transition(
                     handle, StageMask.TOP_OF_PIPE, StageMask.TOP_OF_PIPE,
                     ImageLayout.UNDEFINED, ImageLayout.TRANSFER_DST_OPTIMAL
@@ -147,6 +163,7 @@ public class Texture implements ReniDestructable {
                     handle, StageMask.TOP_OF_PIPE, StageMask.TOP_OF_PIPE,
                     ImageLayout.TRANSFER_DST_OPTIMAL, ImageLayout.SHADER_READONLY
             );
+            buffer.endLabel();
             buffer.end();
             buffer.submit(device.getStandardQueue(ReniQueueType.GRAPHICS));
 
@@ -166,7 +183,7 @@ public class Texture implements ReniDestructable {
             viewInfo.sType(VK13.VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
             viewInfo.image(handle);
             viewInfo.viewType(VK13.VK_IMAGE_VIEW_TYPE_2D);
-            viewInfo.format(VK13.VK_FORMAT_R8G8B8A8_SRGB);
+            viewInfo.format(format);
             viewInfo.subresourceRange().aspectMask(VK13.VK_IMAGE_ASPECT_COLOR_BIT);
             viewInfo.subresourceRange().baseMipLevel(0);
             viewInfo.subresourceRange().levelCount(1);
@@ -217,6 +234,18 @@ public class Texture implements ReniDestructable {
         info.free();
 
         return new TextureSampler(sampler, device);
+    }
+
+    protected GPUBuffer loadRaw(ReniLogicalDevice device, int width, int height, TextureChannels channels, BitDepth depth, ByteBuffer data) {
+        channelCount = channels.count;
+
+        GPUBuffer buffer1 = new GPUBuffer(device, BufferUsage.TRANSFER_SRC, data.capacity());
+        buffer1.allocate();
+        buffer1.upload(0, data);
+        this.width = width;
+        this.height = height;
+
+        return buffer1;
     }
 
     protected GPUBuffer loadStb(ReniLogicalDevice device, TextureFormat format, TextureChannels channels, BitDepth depth, ByteBuffer data) {

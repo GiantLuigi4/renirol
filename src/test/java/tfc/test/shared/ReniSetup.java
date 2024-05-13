@@ -7,7 +7,6 @@ import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.hardware.device.support.image.ReniSwapchainCapabilities;
 import tfc.renirol.frontend.hardware.util.DeviceQuery;
 import tfc.renirol.frontend.hardware.util.ReniHardwareCapability;
-import tfc.renirol.frontend.rendering.enums.flags.SwapchainUsage;
 import tfc.renirol.frontend.rendering.framebuffer.SwapChain;
 import tfc.renirol.frontend.rendering.selectors.ChannelInfo;
 import tfc.renirol.frontend.rendering.selectors.FormatSelector;

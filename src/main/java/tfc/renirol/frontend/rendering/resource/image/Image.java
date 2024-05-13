@@ -3,19 +3,19 @@ package tfc.renirol.frontend.rendering.resource.image;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
+import tfc.renirol.frontend.enums.modes.image.FilterMode;
+import tfc.renirol.frontend.enums.modes.image.MipmapMode;
+import tfc.renirol.frontend.enums.modes.image.WrapMode;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.hardware.util.ReniDestructable;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
-import tfc.renirol.frontend.rendering.enums.ImageLayout;
-import tfc.renirol.frontend.rendering.enums.flags.SwapchainUsage;
-import tfc.renirol.frontend.rendering.enums.format.TextureFormat;
-import tfc.renirol.frontend.rendering.enums.masks.StageMask;
-import tfc.renirol.frontend.rendering.framebuffer.SwapChain;
-import tfc.renirol.frontend.rendering.selectors.FormatSelector;
+import tfc.renirol.frontend.enums.ImageLayout;
+import tfc.renirol.frontend.enums.flags.SwapchainUsage;
+import tfc.renirol.frontend.enums.masks.StageMask;
+import tfc.renirol.frontend.rendering.resource.image.texture.TextureSampler;
 
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-import static org.lwjgl.vulkan.VK10.nvkCreateImage;
 
 // TODO:
 public class Image implements ReniDestructable {
@@ -25,6 +25,7 @@ public class Image implements ReniDestructable {
     private long handle;
     private long memory;
     private long view;
+    private final VkExtent2D extents = VkExtent2D.calloc();
 
     public long getView() {
         return view;
@@ -54,6 +55,8 @@ public class Image implements ReniDestructable {
             // TODO: selector
             int format
     ) {
+        extents.set(width, height);
+
         this.format = format;
         VkImageCreateInfo imageInfo = VkImageCreateInfo.calloc();
         imageInfo.sType(VK13.VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
@@ -141,5 +144,53 @@ public class Image implements ReniDestructable {
         VK13.nvkDestroyImage(device, handle, 0);
         VK13.nvkFreeMemory(device, memory, 0);
         VK13.nvkDestroyImageView(device, view, 0);
+    }
+
+    public long getHandle() {
+        return handle;
+    }
+
+    public VkExtent2D getExtents() {
+        return extents;
+    }
+
+    public TextureSampler createSampler(
+            WrapMode xWrap, WrapMode yWrap,
+            FilterMode min, FilterMode mag,
+            MipmapMode mips,
+            boolean useAnisotropy, float anisotropy,
+            float lodBias, float minLod, float maxLod
+    ) {
+        VkSamplerCreateInfo info = VkSamplerCreateInfo.calloc();
+
+        info.sType(VK13.VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
+        info.magFilter(mag.id);
+        info.minFilter(min.id);
+
+        info.addressModeU(xWrap.id);
+        info.addressModeV(yWrap.id);
+        info.addressModeW(VK13.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+
+        info.anisotropyEnable(useAnisotropy);
+        info.maxAnisotropy(anisotropy);
+
+        info.borderColor(VK13.VK_BORDER_COLOR_INT_OPAQUE_BLACK);
+
+        info.unnormalizedCoordinates(false);
+
+        info.compareEnable(false);
+        info.compareOp(VK13.VK_COMPARE_OP_ALWAYS);
+
+        info.mipmapMode(mips.id);
+
+        info.mipLodBias(lodBias);
+        info.minLod(minLod);
+        info.maxLod(maxLod);
+
+        long sampler = VkUtil.getCheckedLong(buf -> VK13.vkCreateSampler(device, info, null, buf));
+
+        info.free();
+
+        return new TextureSampler(sampler, device);
     }
 }

@@ -1,11 +1,12 @@
 package tfc.test.shared;
 
 import tfc.renirol.frontend.rendering.resource.buffer.DataElement;
-import tfc.renirol.frontend.rendering.enums.prims.NumericPrimitive;
+import tfc.renirol.frontend.enums.prims.NumericPrimitive;
 
 public class VertexElements {
     public static final DataElement POSITION_XYZW = new DataElement(NumericPrimitive.FLOAT, 4);
     public static final DataElement POSITION_XYZ = new DataElement(NumericPrimitive.FLOAT, 3);
+    public static final DataElement POSITION_XY = new DataElement(NumericPrimitive.FLOAT, 2);
     public static final DataElement COLOR_RGBA = new DataElement(NumericPrimitive.FLOAT, 4);
     public static final DataElement COLOR_RGB = new DataElement(NumericPrimitive.FLOAT, 3);
 

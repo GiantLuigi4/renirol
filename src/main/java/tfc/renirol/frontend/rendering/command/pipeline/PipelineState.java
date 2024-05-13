@@ -4,7 +4,7 @@ import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
-import tfc.renirol.frontend.rendering.enums.masks.DynamicStateMasks;
+import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
 import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
 import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorLayout;
 
@@ -260,5 +260,16 @@ public class PipelineState {
 
         pipelineLayoutInfo.setLayoutCount(layouts.length);
         pipelineLayoutInfo.pSetLayouts(setBuffer);
+    }
+
+    public void viewport(float x, float y, float width, float height, float minDepth, float maxDepth) {
+        viewportState.pViewports().get(0).set(
+                x, y, width, height, minDepth, maxDepth
+        );
+    }
+
+    public void scissor(int x, int y, int width, int height) {
+        viewportState.pScissors().get(0).offset().set(x, y);
+        viewportState.pScissors().get(0).extent().set(width, height);
     }
 }

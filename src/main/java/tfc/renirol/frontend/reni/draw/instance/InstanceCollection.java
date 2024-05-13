@@ -2,11 +2,9 @@ package tfc.renirol.frontend.reni.draw.instance;
 
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
-import tfc.renirol.frontend.rendering.enums.flags.ShaderStageFlags;
 import tfc.renirol.frontend.reni.draw.DrawCollection;
 import tfc.renirol.frontend.reni.draw.batch.Drawable;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 

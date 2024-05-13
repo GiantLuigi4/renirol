@@ -4,7 +4,7 @@ import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
-import tfc.renirol.frontend.rendering.enums.flags.DescriptorSetLayoutFlags;
+import tfc.renirol.frontend.enums.flags.DescriptorSetLayoutFlags;
 
 import java.nio.IntBuffer;
 

@@ -6,8 +6,8 @@ import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.device.support.image.ReniSwapchainCapabilities;
 import tfc.renirol.frontend.hardware.util.ReniDestructable;
-import tfc.renirol.frontend.rendering.enums.ImageLayout;
-import tfc.renirol.frontend.rendering.enums.Operation;
+import tfc.renirol.frontend.enums.ImageLayout;
+import tfc.renirol.frontend.enums.Operation;
 import tfc.renirol.frontend.rendering.selectors.FormatSelector;
 import tfc.renirol.util.Pair;
 
@@ -32,6 +32,10 @@ public class RenderPassInfo implements ReniDestructable {
         image = device.hardware.features.image(surface);
     }
 
+    public RenderPassInfo(ReniLogicalDevice device) {
+        this.device = device.getDirect(VkDevice.class);
+    }
+
     public RenderPassInfo colorAttachment(
             Operation load, Operation store,
             ImageLayout initialLayout, ImageLayout targetLayout,
@@ -41,6 +45,33 @@ public class RenderPassInfo implements ReniDestructable {
         int formatV = format.select(image).format();
         VkAttachmentDescription colorAttachment = VkAttachmentDescription.calloc();
         colorAttachment.format(formatV);
+        colorAttachment.samples(VK10.VK_SAMPLE_COUNT_1_BIT);
+
+        colorAttachment.loadOp(load.load);
+        colorAttachment.storeOp(store.store);
+        colorAttachment.stencilLoadOp(load.load);
+        colorAttachment.stencilStoreOp(store.store);
+
+        colorAttachment.initialLayout(initialLayout.value);
+        colorAttachment.finalLayout(targetLayout.value);
+
+        // ref
+        VkAttachmentReference colorAttachmentRef = VkAttachmentReference.calloc();
+        colorAttachmentRef.attachment(attachments.size());
+        colorAttachmentRef.layout(VK13.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        this.attachments.add(Pair.of(colorAttachment, colorAttachmentRef));
+        this.colorAttachments.add(Pair.of(colorAttachment, colorAttachmentRef));
+        return this;
+    }
+
+    public RenderPassInfo colorAttachment(
+            Operation load, Operation store,
+            ImageLayout initialLayout, ImageLayout targetLayout,
+            int format
+    ) {
+        // attachment
+        VkAttachmentDescription colorAttachment = VkAttachmentDescription.calloc();
+        colorAttachment.format(format);
         colorAttachment.samples(VK10.VK_SAMPLE_COUNT_1_BIT);
 
         colorAttachment.loadOp(load.load);
@@ -159,6 +190,7 @@ public class RenderPassInfo implements ReniDestructable {
             attachment.right().free();
         }
         subpass.free();
-        image.destroy();
+        if (image != null)
+            image.destroy();
     }
 }

@@ -9,8 +9,6 @@ public interface Drawable {
 	void draw(CommandBuffer buffer, GraphicsPipeline pipeline);
 	int size();
 	void bind(CommandBuffer buffer);
-	default boolean visible() {
-		return true;
-	}
+	default boolean visible() {return true;}
 }
 //@formatter:on

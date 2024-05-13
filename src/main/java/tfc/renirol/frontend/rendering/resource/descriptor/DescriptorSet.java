@@ -4,17 +4,20 @@ import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
-import tfc.renirol.frontend.rendering.enums.DescriptorType;
+import tfc.renirol.frontend.enums.DescriptorType;
+import tfc.renirol.frontend.hardware.util.ReniDestructable;
 import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
 
 import java.nio.LongBuffer;
 
-public class DescriptorSet {
+public class DescriptorSet implements ReniDestructable {
     private final VkDevice device;
     public final long handle;
+    private final long pool;
 
     public DescriptorSet(ReniLogicalDevice device, DescriptorPool pool, DescriptorLayout... layouts) {
         this.device = device.getDirect(VkDevice.class);
+        this.pool = pool.handle;
         VkDescriptorSetAllocateInfo info = VkDescriptorSetAllocateInfo.calloc().sType(VK13.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
         info.descriptorPool(pool.handle);
         LongBuffer bbBuf = MemoryUtil.memAllocLong(layouts.length);
@@ -59,5 +62,11 @@ public class DescriptorSet {
         VK13.vkUpdateDescriptorSets(device, writeDescriptorSet, null);
         info.free();
         writeDescriptorSet.free();
+    }
+
+    public void destroy() {
+        VK13.vkFreeDescriptorSets(
+                device, pool, handle
+        );
     }
 }

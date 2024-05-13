@@ -10,7 +10,7 @@ import tfc.renirol.frontend.hardware.util.DeviceQuery;
 import tfc.renirol.frontend.hardware.device.ReniHardwareDevice;
 import tfc.renirol.frontend.hardware.util.ReniDestructable;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
-import tfc.renirol.frontend.rendering.enums.flags.SwapchainUsage;
+import tfc.renirol.frontend.enums.flags.SwapchainUsage;
 import tfc.renirol.frontend.rendering.fencing.Fence;
 import tfc.renirol.frontend.rendering.fencing.Semaphore;
 import tfc.renirol.frontend.rendering.framebuffer.ChainBuffer;

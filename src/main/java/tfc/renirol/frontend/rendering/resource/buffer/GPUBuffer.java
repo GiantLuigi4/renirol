@@ -6,8 +6,8 @@ import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.util.ReniDestructable;
-import tfc.renirol.frontend.rendering.enums.BufferUsage;
-import tfc.renirol.frontend.rendering.enums.IndexSize;
+import tfc.renirol.frontend.enums.BufferUsage;
+import tfc.renirol.frontend.enums.IndexSize;
 
 import java.nio.ByteBuffer;
 

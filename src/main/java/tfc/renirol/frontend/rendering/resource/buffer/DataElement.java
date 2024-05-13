@@ -1,6 +1,6 @@
 package tfc.renirol.frontend.rendering.resource.buffer;
 
-import tfc.renirol.frontend.rendering.enums.prims.NumericPrimitive;
+import tfc.renirol.frontend.enums.prims.NumericPrimitive;
 
 public class DataElement {
     public final int size;

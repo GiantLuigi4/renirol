@@ -3,12 +3,13 @@ package tfc.renirol.frontend.rendering.framebuffer;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkDevice;
+import org.lwjgl.vulkan.VkExtent2D;
 import org.lwjgl.vulkan.VkFramebufferCreateInfo;
 import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.util.ReniDestructable;
-import tfc.renirol.frontend.rendering.enums.ImageLayout;
 import tfc.renirol.frontend.rendering.pass.RenderPass;
+import tfc.renirol.frontend.rendering.resource.image.Image;
 
 import java.nio.LongBuffer;
 
@@ -18,18 +19,20 @@ public class FrameBuffer implements ReniDestructable {
     VkDevice logic;
     public final long image;
     long view;
-    SwapChain chain;
-
-    public FrameBuffer(ReniLogicalDevice device) {
-        this.logic = device.getDirect(VkDevice.class);
-        throw new RuntimeException("NYI");
-    }
+    VkExtent2D extents;
 
     public FrameBuffer(VkDevice device, long image, long view, SwapChain chain) {
         this.logic = device;
         this.image = image;
         this.view = view;
-        this.chain = chain;
+        this.extents = chain.extents;
+    }
+
+    public FrameBuffer(ReniLogicalDevice logic, Image image) {
+        this.logic = logic.getDirect(VkDevice.class);
+        this.image = image.getHandle();
+        this.view = image.getView();
+        this.extents = image.getExtents();
     }
 
     @Override
@@ -43,8 +46,8 @@ public class FrameBuffer implements ReniDestructable {
         framebufferInfo.sType(VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
         framebufferInfo.renderPass(pass.handle);
         framebufferInfo.attachmentCount(1);
-        framebufferInfo.width(chain.extents.width());
-        framebufferInfo.height(chain.extents.height());
+        framebufferInfo.width(extents.width());
+        framebufferInfo.height(extents.height());
         framebufferInfo.layers(1);
 
         framebufferInfo.pAttachments(
