@@ -1,4 +1,4 @@
-package tfc.test.tests.shader;
+package tfc.test.tests.font;
 
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryUtil;
@@ -8,28 +8,25 @@ import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VK13;
 import org.lwjgl.vulkan.VkDevice;
 import tfc.renirol.frontend.enums.*;
-import tfc.renirol.frontend.hardware.device.ReniQueueType;
-import tfc.renirol.frontend.rendering.command.CommandBuffer;
-import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
-import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
-import tfc.renirol.frontend.rendering.command.shader.Shader;
 import tfc.renirol.frontend.enums.flags.DescriptorPoolFlags;
 import tfc.renirol.frontend.enums.flags.ShaderStageFlags;
 import tfc.renirol.frontend.enums.format.AttributeFormat;
-import tfc.renirol.frontend.enums.format.BitDepth;
-import tfc.renirol.frontend.enums.format.TextureChannels;
 import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
 import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.enums.modes.image.FilterMode;
 import tfc.renirol.frontend.enums.modes.image.MipmapMode;
 import tfc.renirol.frontend.enums.modes.image.WrapMode;
+import tfc.renirol.frontend.hardware.device.ReniQueueType;
+import tfc.renirol.frontend.rendering.command.CommandBuffer;
+import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
+import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
+import tfc.renirol.frontend.rendering.command.shader.Shader;
 import tfc.renirol.frontend.rendering.pass.RenderPass;
 import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
 import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
-import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
 import tfc.renirol.frontend.rendering.resource.buffer.DataFormat;
+import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
 import tfc.renirol.frontend.rendering.resource.descriptor.*;
-import tfc.renirol.frontend.rendering.resource.image.texture.Texture;
 import tfc.renirol.frontend.rendering.resource.image.texture.TextureSampler;
 import tfc.renirol.frontend.reni.font.ReniFont;
 import tfc.renirol.frontend.reni.font.ReniGlyph;
@@ -38,13 +35,12 @@ import tfc.renirol.util.ShaderCompiler;
 import tfc.test.shared.ReniSetup;
 import tfc.test.shared.VertexElements;
 import tfc.test.shared.VertexFormats;
-import tfc.test.tests.font.LoadAtlas;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
-public class Textures {
+public class DrawFont {
     public static void main(String[] args) {
         ReniSetup.initialize();
 
@@ -64,7 +60,7 @@ public class Textures {
         final Shader VERT = new Shader(
                 compiler,
                 ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                read(Textures.class.getClassLoader().getResourceAsStream("test/font/shader.vert")),
+                read(DrawFont.class.getClassLoader().getResourceAsStream("test/font/f2/shader.vert")),
                 Shaderc.shaderc_glsl_vertex_shader,
                 VK10.VK_SHADER_STAGE_VERTEX_BIT,
                 "vert",
@@ -73,7 +69,7 @@ public class Textures {
         final Shader FRAG = new Shader(
                 compiler,
                 ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                read(Textures.class.getClassLoader().getResourceAsStream("test/font/shader.frag")),
+                read(DrawFont.class.getClassLoader().getResourceAsStream("test/font/f2/shader.frag")),
                 Shaderc.shaderc_glsl_fragment_shader,
                 VK10.VK_SHADER_STAGE_FRAGMENT_BIT,
                 "frag",
@@ -83,12 +79,11 @@ public class Textures {
         PipelineState state = new PipelineState(ReniSetup.GRAPHICS_CONTEXT.getLogical());
         state.dynamicState(DynamicStateMasks.SCISSOR, DynamicStateMasks.VIEWPORT);
 
-        DataFormat format = VertexFormats.POS4_COLOR4;
+        DataFormat format = VertexFormats.POS2;
 
         final BufferDescriptor desc0 = new BufferDescriptor(format);
         desc0.describe(0);
-        desc0.attribute(0, 0, AttributeFormat.RGB32_FLOAT, format.offset(VertexElements.POSITION_XYZW));
-        desc0.attribute(0, 1, AttributeFormat.RGB32_FLOAT, format.offset(VertexElements.COLOR_RGBA));
+        desc0.attribute(0, 0, AttributeFormat.RGB32_FLOAT, format.offset(VertexElements.POSITION_XY));
 
         state.vertexInput(desc0);
 
@@ -119,50 +114,36 @@ public class Textures {
         );
         state.descriptorLayouts(layout);
 
-        final GPUBuffer vbo = new GPUBuffer(ReniSetup.GRAPHICS_CONTEXT.getLogical(), desc0, BufferUsage.VERTEX, 4);
-        final GPUBuffer ibo = new GPUBuffer(ReniSetup.GRAPHICS_CONTEXT.getLogical(), IndexSize.INDEX_16, BufferUsage.INDEX, 6);
-        vbo.allocate();
-        ibo.allocate();
-        final ByteBuffer buffer1 = vbo.createByteBuf();
-        final ByteBuffer indices = ibo.createByteBuf();
-        indices.asShortBuffer().put(new short[]{
-                0, 1, 2,
-                3, 1, 0,
-        });
-        ibo.upload(0, indices);
-        MemoryUtil.memFree(indices);
+        ReniFont font;
+        TextRenderer renderer;
+        {
+            InputStream is = DrawFont.class.getClassLoader().getResourceAsStream("test/font/font.ttf");
+            font = new ReniFont(is);
+            renderer = new TextRenderer(
+                    ReniSetup.GRAPHICS_CONTEXT.getLogical(), font,
+                    1024, 1024
+            );
+            font.setPixelSizes(0, 64);
 
-        InputStream is = LoadAtlas.class.getClassLoader().getResourceAsStream("test/font/help.ttf");
-        ReniFont font = new ReniFont(is);
-        font.setPixelSizes(0, 64);
-        ReniGlyph glyph = font.glyph('4', FreeType.FT_LOAD_DEFAULT);
-        Texture texture = new Texture(
-                ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                glyph.width, glyph.height, TextureChannels.R,
-                BitDepth.DEPTH_8, glyph.buffer
-        );
-        TextureSampler sampler = texture.createSampler(
-                WrapMode.BORDER,
-                WrapMode.BORDER,
-                FilterMode.NEAREST,
-                FilterMode.NEAREST,
-                MipmapMode.NEAREST,
-                true, 16f,
-                0f, 0f, 0f
-        );
-        ImageInfo info = new ImageInfo(texture, sampler);
-        set.bind(0, 0, DescriptorType.COMBINED_SAMPLED_IMAGE, info);
+            try {
+                is.close();
+            } catch (Throwable ignored) {
+            }
+
+            renderer.preload(' ');
+            renderer.preload('\t');
+            for (char c = 'a'; c <= 'z'; c++) renderer.preload(c);
+            for (char c = 'A'; c <= 'Z'; c++) renderer.preload(c);
+            for (char c = '0'; c <= '9'; c++) renderer.preload(c);
+
+            char[] special = ",.!?'\";:-=_+~`@#$%^&*()[]{}\\|".toCharArray();
+            for (char c : special) renderer.preload(c);
+        }
+
 
         GraphicsPipeline pipeline0 = new GraphicsPipeline(state, pass, VERT, FRAG);
 
         try {
-            is.close();
-        } catch (Throwable ignored) {
-        }
-
-        try {
-            int frame = 0;
-
             ReniSetup.WINDOW.grabContext();
             final CommandBuffer buffer = CommandBuffer.create(
                     ReniSetup.GRAPHICS_CONTEXT.getLogical(),
@@ -172,29 +153,6 @@ public class Textures {
             buffer.clearColor(0, 0, 0, 1);
 
             while (!ReniSetup.WINDOW.shouldClose()) {
-                frame = 90 + 45;
-
-                {
-                    final FloatBuffer fb = buffer1.position(0).asFloatBuffer();
-                    fb.put(
-                            0,
-                            new float[]{
-                                    (float) -Math.cos(Math.toRadians(frame)), (float) -Math.sin(Math.toRadians(frame)), 0, 0,
-                                    1, 0, 0, 1,
-
-                                    (float) Math.cos(Math.toRadians(frame)), (float) Math.sin(Math.toRadians(frame)), 0, 0,
-                                    0, 1, 0, 1,
-
-                                    (float) Math.cos(Math.toRadians(frame + 90)), (float) Math.sin(Math.toRadians(frame + 90)), 0, 0,
-                                    0, 0, 0, 1,
-
-                                    (float) -Math.cos(Math.toRadians(frame + 90)), (float) -Math.sin(Math.toRadians(frame + 90)), 0, 0,
-                                    1, 1, 0, 1,
-                            }
-                    );
-                    vbo.upload(0, buffer1);
-                }
-
                 ReniSetup.GRAPHICS_CONTEXT.prepareFrame(ReniSetup.WINDOW);
                 long fbo = ReniSetup.GRAPHICS_CONTEXT.getFrameHandle(pass);
 
@@ -211,20 +169,15 @@ public class Textures {
                 buffer.beginPass(pass, fbo, ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
 
                 buffer.bindPipe(pipeline0);
-                buffer.bindDescriptor(BindPoint.GRAPHICS, pipeline0, set);
                 buffer.viewportScissor(
                         0, 0,
                         ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents().width(),
                         ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents().height(),
                         0f, 1f
                 );
-                buffer.bindVbo(0, vbo);
-                buffer.bindIbo(IndexSize.INDEX_16, ibo);
-                buffer.drawIndexed(
-                        0,
-                        0, 1,
-                        0, 6
-                );
+                buffer.startLabel("Draw Text", 0, 0.5f, 0, 0.5f);
+                renderer.draw("Hello!", buffer, pipeline0, set);
+                buffer.endLabel();
                 buffer.endPass();
                 buffer.endLabel();
                 buffer.end();
@@ -244,14 +197,9 @@ public class Textures {
             err.printStackTrace();
         }
 
-        info.destroy();
-        sampler.destroy();
-        texture.destroy();
+        renderer.destroy();
         layout.destroy();
         pool.destroy();
-        MemoryUtil.memFree(buffer1);
-        ibo.destroy();
-        vbo.destroy();
         ReniSetup.GRAPHICS_CONTEXT.getLogical().waitForIdle();
         FRAG.destroy();
         VERT.destroy();

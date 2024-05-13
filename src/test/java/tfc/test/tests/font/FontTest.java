@@ -9,7 +9,7 @@ import java.io.InputStream;
 
 public class FontTest {
     public static void main(String[] args) {
-        InputStream is = FontDraw.class.getClassLoader().getResourceAsStream("test/font/font.ttf");
+        InputStream is = FontTest.class.getClassLoader().getResourceAsStream("test/font/font.ttf");
         ReniFont font = new ReniFont(is);
         font.setPixelSizes(0, 64);
         ReniGlyph glyph = font.glyph('a', FreeType.FT_LOAD_DEFAULT);

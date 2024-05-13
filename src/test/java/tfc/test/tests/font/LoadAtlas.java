@@ -2,6 +2,7 @@ package tfc.test.tests.font;
 
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.util.freetype.FreeType;
 import org.lwjgl.util.shaderc.Shaderc;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VK13;
@@ -15,9 +16,6 @@ import tfc.renirol.frontend.rendering.command.shader.Shader;
 import tfc.renirol.frontend.enums.flags.DescriptorPoolFlags;
 import tfc.renirol.frontend.enums.flags.ShaderStageFlags;
 import tfc.renirol.frontend.enums.format.AttributeFormat;
-import tfc.renirol.frontend.enums.format.BitDepth;
-import tfc.renirol.frontend.enums.format.TextureChannels;
-import tfc.renirol.frontend.enums.format.TextureFormat;
 import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
 import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.enums.modes.image.FilterMode;
@@ -26,11 +24,12 @@ import tfc.renirol.frontend.enums.modes.image.WrapMode;
 import tfc.renirol.frontend.rendering.pass.RenderPass;
 import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
 import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
-import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
 import tfc.renirol.frontend.rendering.resource.buffer.DataFormat;
+import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
 import tfc.renirol.frontend.rendering.resource.descriptor.*;
-import tfc.renirol.frontend.rendering.resource.image.texture.Texture;
 import tfc.renirol.frontend.rendering.resource.image.texture.TextureSampler;
+import tfc.renirol.frontend.reni.font.ReniFont;
+import tfc.renirol.frontend.reni.font.ReniGlyph;
 import tfc.renirol.frontend.windowing.glfw.GLFWWindow;
 import tfc.renirol.util.ShaderCompiler;
 import tfc.test.shared.ReniSetup;
@@ -41,7 +40,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
-public class FontDraw1 {
+public class LoadAtlas {
     public static void main(String[] args) {
         ReniSetup.initialize();
 
@@ -61,7 +60,7 @@ public class FontDraw1 {
         final Shader VERT = new Shader(
                 compiler,
                 ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                read(FontDraw1.class.getClassLoader().getResourceAsStream("test/texture/shader.vert")),
+                read(LoadAtlas.class.getClassLoader().getResourceAsStream("test/font/shader.vert")),
                 Shaderc.shaderc_glsl_vertex_shader,
                 VK10.VK_SHADER_STAGE_VERTEX_BIT,
                 "vert",
@@ -70,7 +69,7 @@ public class FontDraw1 {
         final Shader FRAG = new Shader(
                 compiler,
                 ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                read(FontDraw1.class.getClassLoader().getResourceAsStream("test/texture/shader.frag")),
+                read(LoadAtlas.class.getClassLoader().getResourceAsStream("test/font/shader.frag")),
                 Shaderc.shaderc_glsl_fragment_shader,
                 VK10.VK_SHADER_STAGE_FRAGMENT_BIT,
                 "frag",
@@ -129,34 +128,67 @@ public class FontDraw1 {
         ibo.upload(0, indices);
         MemoryUtil.memFree(indices);
 
-        InputStream is = FontDraw1.class.getClassLoader().getResourceAsStream("test/texture/texture.png");
-        Texture texture = new Texture(
-                ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                TextureFormat.PNG, TextureChannels.RGBA,
-                BitDepth.DEPTH_8, is
-        );
-        TextureSampler sampler = texture.createSampler(
+        ReniFont font;
+        Atlas atlas;
+        {
+            InputStream is = LoadAtlas.class.getClassLoader().getResourceAsStream("test/font/font.ttf");
+            font = new ReniFont(is);
+            font.setPixelSizes(0, 64);
+
+            atlas = new Atlas(
+                    ReniSetup.GRAPHICS_CONTEXT.getLogical(),
+                    1024, 1024
+            );
+
+            {
+                ReniGlyph glyph = font.glyph(' ', FreeType.FT_LOAD_CROP_BITMAP);
+                atlas.addGlyph(glyph);
+                glyph = font.glyph('\t', FreeType.FT_LOAD_CROP_BITMAP);
+                atlas.addGlyph(glyph);
+            }
+
+            for (char c = 'a'; c <= 'z'; c++) {
+                ReniGlyph glyph = font.glyph(c, FreeType.FT_LOAD_CROP_BITMAP);
+                atlas.addGlyph(glyph);
+            }
+
+            for (char c = 'A'; c <= 'Z'; c++) {
+                ReniGlyph glyph = font.glyph(c, FreeType.FT_LOAD_CROP_BITMAP);
+                atlas.addGlyph(glyph);
+            }
+
+            for (char c = '0'; c <= '9'; c++) {
+                ReniGlyph glyph = font.glyph(c, FreeType.FT_LOAD_CROP_BITMAP);
+                atlas.addGlyph(glyph);
+            }
+
+            char[] special = ",.!?'\";:-=_+~`@#$%^&*()[]{}\\|".toCharArray();
+            for (char c : special) {
+                ReniGlyph glyph = font.glyph(c, FreeType.FT_LOAD_CROP_BITMAP);
+                atlas.addGlyph(glyph);
+            }
+
+            try {
+                is.close();
+            } catch (Throwable ignored) {
+            }
+        }
+
+        TextureSampler sampler = atlas.createSampler(
                 WrapMode.BORDER,
                 WrapMode.BORDER,
-                FilterMode.NEAREST,
-                FilterMode.NEAREST,
+                FilterMode.LINEAR,
+                FilterMode.LINEAR,
                 MipmapMode.NEAREST,
-                true, 16f,
+                false, 16f,
                 0f, 0f, 0f
         );
-        ImageInfo info = new ImageInfo(texture, sampler);
+        ImageInfo info = new ImageInfo(atlas.getImage(), sampler);
         set.bind(0, 0, DescriptorType.COMBINED_SAMPLED_IMAGE, info);
 
         GraphicsPipeline pipeline0 = new GraphicsPipeline(state, pass, VERT, FRAG);
 
         try {
-            is.close();
-        } catch (Throwable ignored) {
-        }
-
-        try {
-            int frame = 0;
-
             ReniSetup.WINDOW.grabContext();
             final CommandBuffer buffer = CommandBuffer.create(
                     ReniSetup.GRAPHICS_CONTEXT.getLogical(),
@@ -166,7 +198,8 @@ public class FontDraw1 {
             buffer.clearColor(0, 0, 0, 1);
 
             while (!ReniSetup.WINDOW.shouldClose()) {
-                frame++;
+                float frame = 90 + 45;
+                atlas.reset();
 
                 {
                     final FloatBuffer fb = buffer1.position(0).asFloatBuffer();
@@ -240,7 +273,7 @@ public class FontDraw1 {
 
         info.destroy();
         sampler.destroy();
-        texture.destroy();
+        atlas.destroy();
         layout.destroy();
         pool.destroy();
         MemoryUtil.memFree(buffer1);

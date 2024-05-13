@@ -12,7 +12,6 @@ import tfc.renirol.frontend.enums.flags.ShaderStageFlags;
 import tfc.renirol.frontend.enums.format.AttributeFormat;
 import tfc.renirol.frontend.enums.format.BitDepth;
 import tfc.renirol.frontend.enums.format.TextureChannels;
-import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
 import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.enums.modes.image.FilterMode;
 import tfc.renirol.frontend.enums.modes.image.MipmapMode;
@@ -20,7 +19,6 @@ import tfc.renirol.frontend.enums.modes.image.WrapMode;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.enums.flags.SwapchainUsage;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
-import tfc.renirol.frontend.rendering.ReniQueue;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
 import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
@@ -44,9 +42,7 @@ import tfc.test.shared.VertexFormats;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 public class Atlas {
     public TextureSampler createSampler(
@@ -156,7 +152,7 @@ public class Atlas {
         VERT = new Shader(
                 compiler,
                 ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                read(FontDraw.class.getClassLoader().getResourceAsStream("shader/blit.vsh")),
+                read(LoadAtlas.class.getClassLoader().getResourceAsStream("shader/blit.vsh")),
                 Shaderc.shaderc_glsl_vertex_shader,
                 VK10.VK_SHADER_STAGE_VERTEX_BIT,
                 "blit_vert", "main"
@@ -164,7 +160,7 @@ public class Atlas {
         FRAG = new Shader(
                 compiler,
                 ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                read(FontDraw.class.getClassLoader().getResourceAsStream("shader/blit.fsh")),
+                read(LoadAtlas.class.getClassLoader().getResourceAsStream("shader/blit.fsh")),
                 Shaderc.shaderc_glsl_fragment_shader,
                 VK10.VK_SHADER_STAGE_FRAGMENT_BIT,
                 "blit_frag", "main"
@@ -240,7 +236,7 @@ public class Atlas {
         return true;
     }
 
-    private void blitGlyph(ReniGlyph  glyph) {
+    private void blitGlyph(ReniGlyph glyph) {
         if (glyph.buffer == null)
             return;
 
@@ -286,12 +282,14 @@ public class Atlas {
                 left, top, 0, 0,
         });
 
-        buffer.begin();
-        buffer.bufferData(vbo, 0, 4 * 4 * 6, data);
-        buffer.end();
-        buffer.submit(logicalDevice.getStandardQueue(ReniQueueType.TRANSFER));
-        buffer.reset();
+//        buffer.begin();
+//        buffer.bufferData(vbo, 0, 4 * 4 * 6, data);
+//        buffer.end();
+//        buffer.submit(logicalDevice.getStandardQueue(ReniQueueType.TRANSFER));
+//        buffer.reset();
+        vbo.upload(0, data);
 
+        // TODO: optimize
         buffer.begin();
 
         buffer.startLabel("atlas", 0, 0.5f, 0, 0.5f);
@@ -303,10 +301,7 @@ public class Atlas {
         buffer.noClear();
         buffer.beginPass(pass, fbo, extents);
         buffer.bindPipe(pipeline);
-        buffer.bindDescriptor(
-                BindPoint.GRAPHICS, pipeline,
-                set
-        );
+        buffer.bindDescriptor(BindPoint.GRAPHICS, pipeline, set);
 
         buffer.bindVbo(0, vbo);
         buffer.draw(0, 6);
