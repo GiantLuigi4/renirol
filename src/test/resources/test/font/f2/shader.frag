@@ -65,9 +65,9 @@ void main() {
     vec2 ts = textureSize(texSampler, 0);
     ts = (1. / ts);
 
-    float left = applyKernel(texSampler, inUV.xy - vec2(ts.x / 3., 0)).x;
+    float left = applyKernel(texSampler, inUV.xy - vec2(ts.x / 1., 0)).x;
     float center = applyKernel(texSampler, inUV.xy).x;
-    float right = applyKernel(texSampler, inUV.xy + vec2(ts.x / 3., 0)).x;
+    float right = applyKernel(texSampler, inUV.xy + vec2(ts.x / 1., 0)).x;
 
     ivec3 subpixel = ivec3(0, 1, 2);
 

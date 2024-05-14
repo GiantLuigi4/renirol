@@ -133,6 +133,7 @@ public class DrawFont {
         }
 
         renderer.bind(state);
+        state.constantBuffer(VK13.VK_SHADER_STAGE_VERTEX_BIT, 4);
         GraphicsPipeline pipeline0 = new GraphicsPipeline(state, pass, VERT, FRAG);
 
         try {
@@ -170,7 +171,7 @@ public class DrawFont {
                 buffer.startLabel("Draw Text", 0, 0.5f, 0, 0.5f);
                 renderer.draw(() -> {
                     buffer.beginPass(pass, fbo, ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
-                }, "Hello!", buffer, pipeline0, set);
+                }, "←ςθδφζωβ", buffer, pipeline0, set);
                 buffer.endLabel();
                 buffer.endPass();
                 buffer.endLabel();

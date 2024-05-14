@@ -101,4 +101,8 @@ public class ReniFont {
     public short height() {
         return face.height();
     }
+
+    public short descender() {
+        return face.descender();
+    }
 }

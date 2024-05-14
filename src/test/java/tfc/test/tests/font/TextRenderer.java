@@ -8,6 +8,7 @@ import tfc.renirol.frontend.enums.BufferUsage;
 import tfc.renirol.frontend.enums.DescriptorType;
 import tfc.renirol.frontend.enums.IndexSize;
 import tfc.renirol.frontend.enums.flags.AdvanceRate;
+import tfc.renirol.frontend.enums.flags.ShaderStageFlags;
 import tfc.renirol.frontend.enums.format.AttributeFormat;
 import tfc.renirol.frontend.enums.modes.image.FilterMode;
 import tfc.renirol.frontend.enums.modes.image.MipmapMode;
@@ -52,6 +53,7 @@ public class TextRenderer implements ReniDestructable {
     GPUBuffer quad;
     GPUBuffer draw;
     GPUBuffer qIndicies;
+    GPUBuffer uform;
 
     public void draw(
             Runnable startPass,
@@ -85,7 +87,19 @@ public class TextRenderer implements ReniDestructable {
         float[] scaleX = new float[1];
         float[] scale = new float[1];
         GLFW.glfwGetMonitorContentScale(GLFW.glfwGetPrimaryMonitor(), scaleX, scale);
-        float bottom = ((font.height() * 45) / font.unitsPerEM()) * scale[0];
+
+        {
+            ByteBuffer buffer1 = MemoryUtil.memAlloc(4);
+            FloatBuffer fb = buffer1.asFloatBuffer();
+            fb.put(0, font.unitsPerEM());
+            cmd.pushConstants(
+                    pipeline0.layout.handle,
+                    new ShaderStageFlags[]{ShaderStageFlags.VERTEX},
+                    0, 4, buffer1
+            );
+            MemoryUtil.memFree(buffer1);
+        }
+
         for (char c : text.toCharArray()) {
             AtlasInfo inf = getAtlas(c);
             ByteBuffer buf = buffer.computeIfAbsent(inf, (k) -> draw.createByteBuf());
@@ -95,12 +109,14 @@ public class TextRenderer implements ReniDestructable {
             fb.put(y);
 
             ReniGlyph glyph = font.glyph(c, FreeType.FT_LOAD_CROP_BITMAP);
+            float bottom = ((font.height() + font.descender()) * 64) / font.unitsPerEM();
+
             // vec4 drawBounds
             // TODO: can pre-sum left&top into offset
             fb.put(glyph.left);
-            fb.put(bottom - glyph.height);
+            fb.put(bottom - glyph.top);
             fb.put(glyph.left + glyph.width);
-            fb.put(bottom);
+            fb.put(bottom + (glyph.height - glyph.top));
 
             float[] uvBounds = inf.atlas.getBounds(c);
             // vec4 uvBounds
@@ -241,6 +257,12 @@ public class TextRenderer implements ReniDestructable {
                 4086 * 4086
         );
         draw.allocate();
+
+        uform = new GPUBuffer(
+                device, BufferUsage.UNIFORM,
+                4
+        );
+        uform.allocate();
     }
 
     public AtlasInfo preload(char c) {

@@ -12,10 +12,14 @@ public class ReniGlyph implements ReniDestructable {
     public final ByteBuffer buffer;
     public final int left, top;
     public final int width, height;
+    public final long widthGlyph, heightGlyph;
     public final char symbol;
     public final int index;
 
     public final long advanceX, advanceY;
+    public final short descent;
+
+    public final long bbLeft, bbRight, bbTop, bbBottom;
 
     public ReniGlyph(char symbol, FT_Face face, int index, int flags) {
         this.index = index;
@@ -40,6 +44,14 @@ public class ReniGlyph implements ReniDestructable {
 
         advanceX = face.glyph().advance().x();
         advanceY = face.glyph().advance().y();
+        widthGlyph = face.glyph().metrics().width();
+        heightGlyph = face.glyph().metrics().height();
+        descent = face.descender();
+
+        bbLeft = face.bbox().xMin();
+        bbRight = face.bbox().xMax();
+        bbTop = face.bbox().yMin();
+        bbBottom = face.bbox().yMax();
     }
 
     public void destroy() {

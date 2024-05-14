@@ -3,6 +3,11 @@ plugins {
     id 'java'
 }
 
+compileJava.options.encoding = 'UTF-8'
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
 group = 'tfc'
 version = '1.0-SNAPSHOT'
 
