@@ -15,6 +15,8 @@ public class ReniGlyph implements ReniDestructable {
     public final char symbol;
     public final int index;
 
+    public final long advanceX, advanceY;
+
     public ReniGlyph(char symbol, FT_Face face, int index, int flags) {
         this.index = index;
         this.symbol = symbol;
@@ -30,11 +32,14 @@ public class ReniGlyph implements ReniDestructable {
         if (error != 0) throw new RuntimeException("Failed to render glyph: " + FreeType.FT_Error_String(error));
 
         left = face.glyph().bitmap_left();
-        top = face.glyph().bitmap_left();
+        top = face.glyph().bitmap_top();
         buffer = face.glyph().bitmap().buffer(
                 (width = face.glyph().bitmap().width()) *
                         (height = face.glyph().bitmap().rows())
         );
+
+        advanceX = face.glyph().advance().x();
+        advanceY = face.glyph().advance().y();
     }
 
     public void destroy() {

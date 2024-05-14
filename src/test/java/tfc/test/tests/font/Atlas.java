@@ -43,6 +43,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.HashMap;
+import java.util.Objects;
 
 public class Atlas {
     public TextureSampler createSampler(
@@ -227,8 +228,8 @@ public class Atlas {
         float[] bounds = new float[4];
         bounds[0] = lastX / (float) width;
         bounds[1] = lastY / (float) height;
-        bounds[2] = glyph.width / (float) width;
-        bounds[3] = glyph.height / (float) height;
+        bounds[2] = bounds[0] + glyph.width / (float) width;
+        bounds[3] = bounds[1] + glyph.height / (float) height;
         glyphBounds.put(glyph.symbol, bounds);
 
         lastX += glyph.width;
@@ -289,7 +290,7 @@ public class Atlas {
 //        buffer.reset();
         vbo.upload(0, data);
 
-        // TODO: optimize
+        // TODO: optimize (switch to copy image)
         buffer.begin();
 
         buffer.startLabel("atlas", 0, 0.5f, 0, 0.5f);
@@ -345,5 +346,22 @@ public class Atlas {
         lastX = 0;
         lastY = 0;
         rwHeight = 0;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Atlas atlas = (Atlas) o;
+        return lastX == atlas.lastX && lastY == atlas.lastY && rwHeight == atlas.rwHeight && width == atlas.width && height == atlas.height && Objects.equals(logicalDevice, atlas.logicalDevice);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), lastX, lastY, rwHeight, width, height, logicalDevice);
+    }
+
+    public float[] getBounds(char c) {
+        return glyphBounds.get(c);
     }
 }

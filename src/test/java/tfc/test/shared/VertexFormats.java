@@ -11,4 +11,5 @@ public class VertexFormats {
     public static final DataFormat INDEX16 = new DataFormat(VertexElements.INDEX16);
     public static final DataFormat INDEX32 = new DataFormat(VertexElements.INDEX32);
     public static final DataFormat POS2 = new DataFormat(VertexElements.POSITION_XY);
+    public static final DataFormat POS2_POS4_COLOR4 = new DataFormat(VertexElements.POSITION_XY, VertexElements.POSITION_XYZW, VertexElements.COLOR_RGBA);
 }

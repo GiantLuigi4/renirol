@@ -53,7 +53,7 @@ vec4 applyKernel(sampler2D tex, vec2 texCoords) {
 }
 
 float px(float distance) {
-    float width = 0.2;
+    float width = 0.5;
     float edge = 0.05;
     float alpha = smoothstep(width, width + edge, distance);
 //    width += 0.15;
@@ -81,4 +81,8 @@ void main() {
     res[subpixel.g] = c;
     res[subpixel.b] = r;
     outColor = res;
+    res.a = max(res.x, max(res.y, res.z));
+    res.xyz /= res.a;
+
+    if (res.a == 0) discard;
 }

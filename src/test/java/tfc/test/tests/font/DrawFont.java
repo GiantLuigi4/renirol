@@ -79,14 +79,6 @@ public class DrawFont {
         PipelineState state = new PipelineState(ReniSetup.GRAPHICS_CONTEXT.getLogical());
         state.dynamicState(DynamicStateMasks.SCISSOR, DynamicStateMasks.VIEWPORT);
 
-        DataFormat format = VertexFormats.POS2;
-
-        final BufferDescriptor desc0 = new BufferDescriptor(format);
-        desc0.describe(0);
-        desc0.attribute(0, 0, AttributeFormat.RGB32_FLOAT, format.offset(VertexElements.POSITION_XY));
-
-        state.vertexInput(desc0);
-
         // TODO: ideally this stuff would be abstracted away more
         final DescriptorPool pool = new DescriptorPool(
                 ReniSetup.GRAPHICS_CONTEXT.getLogical(),
@@ -140,7 +132,7 @@ public class DrawFont {
             for (char c : special) renderer.preload(c);
         }
 
-
+        renderer.bind(state);
         GraphicsPipeline pipeline0 = new GraphicsPipeline(state, pass, VERT, FRAG);
 
         try {
@@ -176,7 +168,9 @@ public class DrawFont {
                         0f, 1f
                 );
                 buffer.startLabel("Draw Text", 0, 0.5f, 0, 0.5f);
-                renderer.draw("Hello!", buffer, pipeline0, set);
+                renderer.draw(() -> {
+                    buffer.beginPass(pass, fbo, ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
+                }, "Hello!", buffer, pipeline0, set);
                 buffer.endLabel();
                 buffer.endPass();
                 buffer.endLabel();
@@ -203,7 +197,6 @@ public class DrawFont {
         ReniSetup.GRAPHICS_CONTEXT.getLogical().waitForIdle();
         FRAG.destroy();
         VERT.destroy();
-        desc0.destroy();
         pipeline0.destroy();
         pass.destroy();
         ReniSetup.GRAPHICS_CONTEXT.destroy();

@@ -14,6 +14,7 @@ import tfc.renirol.util.ReadOnlyList;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class ReniFont {
@@ -77,10 +78,12 @@ public class ReniFont {
         if (error != 0) throw new RuntimeException("Failed to set pixel sizes: " + FreeType.FT_Error_String(error));
     }
 
+    HashMap<Character, ReniGlyph> glyphs = new HashMap<>();
+
     public ReniGlyph glyph(char code, int flags) {
-        return new ReniGlyph(
+        return glyphs.computeIfAbsent(code, (k) -> new ReniGlyph(
                 code, face, FreeType.FT_Get_Char_Index(face, code), flags
-        );
+        ));
     }
 
     public ReadOnlyList<FontSize> sizes() {
@@ -93,5 +96,9 @@ public class ReniFont {
 
     public short unitsPerEM() {
         return face.units_per_EM();
+    }
+
+    public short height() {
+        return face.height();
     }
 }
