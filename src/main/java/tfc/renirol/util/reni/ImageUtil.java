@@ -84,7 +84,7 @@ public class ImageUtil {
 
                 for (int i = 0; i < len; i++) {
                     final int indexTo = i * targetChannels;
-                    to.putShort(indexTo, from.get(i));
+                    to.put(indexTo, from.get(i));
                 }
 
                 if (freeOld)

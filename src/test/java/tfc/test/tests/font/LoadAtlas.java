@@ -140,6 +140,7 @@ public class LoadAtlas {
                     1024, 1024
             );
 
+            atlas.beginModifications();
             {
                 ReniGlyph glyph = font.glyph(' ', FreeType.FT_LOAD_CROP_BITMAP);
                 atlas.addGlyph(glyph);
@@ -167,6 +168,7 @@ public class LoadAtlas {
                 ReniGlyph glyph = font.glyph(c, FreeType.FT_LOAD_CROP_BITMAP);
                 atlas.addGlyph(glyph);
             }
+            atlas.submit();
 
             try {
                 is.close();

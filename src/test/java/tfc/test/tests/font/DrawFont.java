@@ -171,7 +171,7 @@ public class DrawFont {
                 buffer.startLabel("Draw Text", 0, 0.5f, 0, 0.5f);
                 renderer.draw(() -> {
                     buffer.beginPass(pass, fbo, ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
-                }, "←ςθδφζωβ", buffer, pipeline0, set);
+                }, "Hello, how are you doing today! \"←\"", buffer, pipeline0, set);
                 buffer.endLabel();
                 buffer.endPass();
                 buffer.endLabel();

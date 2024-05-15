@@ -56,8 +56,8 @@ float px(float distance) {
     float width = 0.5;
     float edge = 0.05;
     float alpha = smoothstep(width, width + edge, distance);
-//    width += 0.15;
-//    alpha = min(alpha, smoothstep(width, width - edge, distance));
+    //    width += 0.15;
+    //    alpha = min(alpha, smoothstep(width, width - edge, distance));
     return alpha;
 }
 
@@ -80,9 +80,14 @@ void main() {
     res[subpixel.r] = l;
     res[subpixel.g] = c;
     res[subpixel.b] = r;
-    outColor = res;
+
     res.a = max(res.x, max(res.y, res.z));
     res.xyz /= res.a;
+
+//    res *= vec4(gl_FragCoord.x / 1600, (1 - gl_FragCoord.x / 200), clamp((gl_FragCoord.x - 300) / 200, 0, 1), 1);
+//    res *= vec4(gl_FragCoord.x / 1600, (1 - gl_FragCoord.x / 200), clamp(1 - (gl_FragCoord.x - 400) / 200, 0, 1), 1);
+
+    outColor = res;
 
     if (res.a == 0) discard;
 }

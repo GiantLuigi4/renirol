@@ -130,6 +130,9 @@ public class TextRenderer implements ReniDestructable {
             x += glyph.advanceX;
         }
 
+        for (AtlasInfo atlas : atlases)
+            atlas.stopModify();
+
         buffer.forEach((k, v) -> {
             v.flip();
             int count = v.limit() / MEMORY_FOOTPRINT;
@@ -180,7 +183,19 @@ public class TextRenderer implements ReniDestructable {
         state.vertexInput(descLeft, descRight);
     }
 
-    private record AtlasInfo(Atlas atlas, TextureSampler sampler, ImageInfo info) {
+    private static final class AtlasInfo {
+        private boolean modifying;
+        private final Atlas atlas;
+        private final TextureSampler sampler;
+        private final ImageInfo info;
+
+        private AtlasInfo(Atlas atlas, TextureSampler sampler, ImageInfo info) {
+            this.modifying = false;
+            this.atlas = atlas;
+            this.sampler = sampler;
+            this.info = info;
+        }
+
         private static AtlasInfo create(Atlas atlas) {
             TextureSampler sampler = atlas.createSampler(
                     WrapMode.BORDER,
@@ -210,6 +225,41 @@ public class TextRenderer implements ReniDestructable {
         @Override
         public int hashCode() {
             return Objects.hash(atlas, sampler, info);
+        }
+
+        public Atlas atlas() {
+            return atlas;
+        }
+
+        public TextureSampler sampler() {
+            return sampler;
+        }
+
+        public ImageInfo info() {
+            return info;
+        }
+
+        @Override
+        public String toString() {
+            return "AtlasInfo[" +
+                    "modifying=" + modifying + ", " +
+                    "atlas=" + atlas + ", " +
+                    "sampler=" + sampler + ", " +
+                    "info=" + info + ']';
+        }
+
+        public void startModify() {
+            if (!modifying) {
+                atlas.beginModifications();
+                modifying = true;
+            }
+        }
+
+        public void stopModify() {
+            if (modifying) {
+                atlas.submit();
+                modifying = false;
+            }
         }
     }
 
@@ -268,6 +318,7 @@ public class TextRenderer implements ReniDestructable {
     public AtlasInfo preload(char c) {
         ReniGlyph glyph = font.glyph(c, FreeType.FT_LOAD_CROP_BITMAP);
         for (AtlasInfo atlas : atlases) {
+            atlas.startModify();
             if (atlas.addGlyph(glyph)) {
                 infs.put(c, atlas);
                 return atlas;
@@ -276,6 +327,7 @@ public class TextRenderer implements ReniDestructable {
         Atlas newAt;
         AtlasInfo inf;
         atlases.add(inf = AtlasInfo.create(newAt = new Atlas(device, atlasWidth, atlasHeight)));
+        inf.startModify();
         newAt.addGlyph(glyph);
         infs.put(c, inf);
         return inf;

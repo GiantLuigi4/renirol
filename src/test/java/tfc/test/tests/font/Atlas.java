@@ -43,6 +43,7 @@ import tfc.test.shared.VertexFormats;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
 
@@ -78,116 +79,21 @@ public class Atlas {
     final int width, height;
 
     final ReniLogicalDevice logicalDevice;
-    final DescriptorSet set;
 
     final CommandBuffer buffer;
-    final RenderPass pass;
 
-    final long fbo;
     private final Image img;
-
-    final ShaderCompiler compiler = new ShaderCompiler();
-    final Shader VERT, FRAG;
-    final VkExtent2D extents;
-    final FrameBuffer frameBuffer;
-
-    final GPUBuffer vbo;
 
     public Atlas(ReniLogicalDevice logicalDevice, int width, int height) {
         img = new Image(logicalDevice).setUsage(SwapchainUsage.GENERIC);
         img.create(this.width = width, this.height = height, VK13.VK_FORMAT_R8G8B8A8_SRGB);
 
-        vbo = new GPUBuffer(
-                logicalDevice, BufferUsage.VERTEX,
-                4 * 4 * 6
-        );
-        vbo.allocate();
-
         buffer = CommandBuffer.create(
                 logicalDevice, ReniQueueType.GRAPHICS,
                 true, false
         );
-        PipelineState state = new PipelineState(ReniSetup.GRAPHICS_CONTEXT.getLogical());
-        state.viewport(0, 0, width, height, 0, 1);
-        state.scissor(0, 0, width, height);
-        extents = VkExtent2D.calloc();
-        extents.set(width, height);
-
         this.logicalDevice = logicalDevice;
-
-        DataFormat format = VertexFormats.POS2_UV2;
-
-        final BufferDescriptor desc0 = new BufferDescriptor(format);
-        desc0.describe(0);
-        desc0.attribute(0, 0, AttributeFormat.RG32_FLOAT, format.offset(VertexElements.POSITION_XY));
-        desc0.attribute(0, 1, AttributeFormat.RG32_FLOAT, format.offset(VertexElements.UV0));
-        state.vertexInput(desc0);
-
-        pool = new DescriptorPool(
-                ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                1,
-                new DescriptorPoolFlags[0],
-                DescriptorPool.PoolInfo.of(DescriptorType.UNIFORM_BUFFER, 10)
-        );
-        DescriptorLayout layout;
-        {
-            final DescriptorLayoutInfo info = new DescriptorLayoutInfo(
-                    0, DescriptorType.COMBINED_SAMPLED_IMAGE,
-                    1, ShaderStageFlags.FRAGMENT
-            );
-
-            layout = new DescriptorLayout(
-                    ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                    0, info
-            );
-
-            info.destroy();
-        }
-        state.descriptorLayouts(layout);
-
-        set = new DescriptorSet(
-                ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                pool, layout
-        );
-
-        compiler.setupGlsl();
-        VERT = new Shader(
-                compiler,
-                ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                read(LoadAtlas.class.getClassLoader().getResourceAsStream("shader/blit.vsh")),
-                Shaderc.shaderc_glsl_vertex_shader,
-                VK10.VK_SHADER_STAGE_VERTEX_BIT,
-                "blit_vert", "main"
-        );
-        FRAG = new Shader(
-                compiler,
-                ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                read(LoadAtlas.class.getClassLoader().getResourceAsStream("shader/blit.fsh")),
-                Shaderc.shaderc_glsl_fragment_shader,
-                VK10.VK_SHADER_STAGE_FRAGMENT_BIT,
-                "blit_frag", "main"
-        );
-
-        RenderPassInfo passInfo = new RenderPassInfo(logicalDevice);
-        pass = passInfo.colorAttachment(
-                Operation.PERFORM, Operation.PERFORM,
-                ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
-                ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
-                VK13.VK_FORMAT_R8G8B8A8_SRGB
-        ).dependency().subpass().create();
-        passInfo.destroy();
-
-        pipeline = new GraphicsPipeline(state, pass, VERT, FRAG);
-
-//        layout.destroy();
-//        desc0.destroy();
-
-        frameBuffer = new FrameBuffer(logicalDevice, img);
-        fbo = frameBuffer.forPass(pass);
     }
-
-    DescriptorPool pool;
-    GraphicsPipeline pipeline;
 
     public boolean addGlyph(ReniGlyph glyph) {
         return add(glyph);
@@ -206,8 +112,8 @@ public class Atlas {
         }
     }
 
-    HashMap<Character, float[]> glyphBounds = new HashMap<>();
-    HashMap<Integer, float[]> glyphBoundsByIndex = new HashMap<>();
+    final HashMap<Character, float[]> glyphBounds = new HashMap<>();
+    final HashMap<Integer, float[]> glyphBoundsByIndex = new HashMap<>();
 
     boolean add(ReniGlyph glyph) {
         if (glyphBoundsByIndex.containsKey(glyph.index)) {
@@ -226,7 +132,7 @@ public class Atlas {
 
         blitGlyph(glyph);
 
-        float[] bounds = new float[4];
+        final float[] bounds = new float[4];
         bounds[0] = lastX / (float) width;
         bounds[1] = lastY / (float) height;
         bounds[2] = bounds[0] + glyph.width / (float) width;
@@ -238,153 +144,44 @@ public class Atlas {
         return true;
     }
 
+    ArrayList<Runnable> rs = new ArrayList<>();
+
     private void blitGlyph(ReniGlyph glyph) {
         if (glyph.buffer == null)
             return;
 
-        final boolean blitUpload = false;
+        final ByteBuffer buf;
+        final Texture tx = new Texture(
+                logicalDevice, glyph.width, glyph.height,
+                TextureChannels.RGBA, BitDepth.DEPTH_8,
+                buf = ImageUtil.convertChannels(
+                        glyph.buffer.position(0),
+                        1, 4,
+                        false,
+                        ImageUtil.ConvertMode.BLACK_OPAQUE
+                ),
+                ImageLayout.TRANSFER_SRC_OPTIMAL
+        );
+        MemoryUtil.memFree(buf);
+        rs.add(tx::destroy);
 
-        Texture tx;
-        if (blitUpload) {
-            tx = new Texture(
-                    logicalDevice, glyph.width, glyph.height,
-                    TextureChannels.R, BitDepth.DEPTH_8,
-                    glyph.buffer.position(0),
-                    ImageLayout.TRANSFER_SRC_OPTIMAL
-            );
-        } else {
-            ByteBuffer buf;
-            tx = new Texture(
-                    logicalDevice, glyph.width, glyph.height,
-                    TextureChannels.RGBA, BitDepth.DEPTH_8,
-                    buf = ImageUtil.convertChannels(
-                            glyph.buffer.position(0),
-                            1, 4,
-                            false,
-                            ImageUtil.ConvertMode.BLACK_OPAQUE
-                    ),
-                    ImageLayout.TRANSFER_SRC_OPTIMAL
-            );
-            MemoryUtil.memFree(buf);
-        }
+        final float left = lastX;
+        final float top = lastY;
+        final float right = left + glyph.width;
+        final float bottom = top + glyph.height;
 
-        float texelX = 1f / width;
-        float texelY = 1f / height;
-
-        float left = lastX;
-        float top = lastY;
-        float right = left + glyph.width;
-        float bottom = top + glyph.height;
-
-        if (blitUpload) {
-            TextureSampler sampler = tx.createSampler(
-                    WrapMode.CLAMP,
-                    WrapMode.CLAMP,
-                    FilterMode.LINEAR,
-                    FilterMode.LINEAR,
-                    MipmapMode.NEAREST,
-                    false, 0f,
-                    0f, 0f, 0f
-            );
-            ImageInfo info = new ImageInfo(tx, sampler);
-            set.bind(0, 0, DescriptorType.COMBINED_SAMPLED_IMAGE, info);
-
-            ByteBuffer data = vbo.createByteBuf();
-            FloatBuffer fb = data.asFloatBuffer();
-
-            left *= texelX;
-            top *= texelY;
-            right *= texelX;
-            bottom *= texelY;
-            fb.put(new float[]{
-                    right, bottom, 1, 1,
-                    left, bottom, 0, 1,
-                    left, top, 0, 0,
-
-                    right, top, 1, 0,
-                    right, bottom, 1, 1,
-                    left, top, 0, 0,
-            });
-
-            vbo.upload(0, data);
-            MemoryUtil.memFree(data);
-
-            // TODO: optimize (switch to copy image)
-            buffer.begin();
-
-            buffer.startLabel("atlas", 0, 0.5f, 0, 0.5f);
-            buffer.transition(
-                    img.getHandle(), StageMask.TOP_OF_PIPE, StageMask.GRAPHICS,
-                    ImageLayout.SHADER_READONLY, ImageLayout.COLOR_ATTACHMENT_OPTIMAL
-            );
-
-            buffer.noClear();
-            buffer.beginPass(pass, fbo, extents);
-            buffer.bindPipe(pipeline);
-            buffer.bindDescriptor(BindPoint.GRAPHICS, pipeline, set);
-
-            buffer.bindVbo(0, vbo);
-            buffer.draw(0, 6);
-
-            buffer.endPass();
-
-            buffer.transition(
-                    img.getHandle(), StageMask.GRAPHICS, StageMask.TOP_OF_PIPE,
-                    ImageLayout.COLOR_ATTACHMENT_OPTIMAL, ImageLayout.SHADER_READONLY
-            );
-
-            buffer.endLabel();
-            buffer.end();
-            buffer.submit(logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS));
-            buffer.reset();
-
-            info.destroy();
-            sampler.destroy();
-        } else {
-            // TODO: get working?
-            buffer.begin();
-            buffer.transition(
-                    img.getHandle(), StageMask.TOP_OF_PIPE, StageMask.TOP_OF_PIPE,
-                    ImageLayout.COLOR_ATTACHMENT_OPTIMAL, ImageLayout.TRANSFER_DST_OPTIMAL
-            );
-            buffer.end();
-            buffer.submit(logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS));
-            logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS).await();
-
-            buffer.begin();
-            buffer.copyImage(
-                    tx, ImageLayout.TRANSFER_SRC_OPTIMAL,
-                    0, 0,
-                    img, ImageLayout.TRANSFER_DST_OPTIMAL,
-                    (int) left, (int) top,
-                    (int) (right - left), (int) (bottom - top)
-            );
-            buffer.transition(
-                    img.getHandle(), StageMask.TOP_OF_PIPE, StageMask.TOP_OF_PIPE,
-                    ImageLayout.TRANSFER_DST_OPTIMAL, ImageLayout.SHADER_READONLY
-            );
-            buffer.end();
-            buffer.submit(logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS));
-            logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS).await();
-        }
-
-        tx.destroy();
+        buffer.copyImage(
+                tx, ImageLayout.TRANSFER_SRC_OPTIMAL,
+                0, 0,
+                img, ImageLayout.TRANSFER_DST_OPTIMAL,
+                (int) left, (int) top,
+                (int) (right - left), (int) (bottom - top)
+        );
     }
 
     public void destroy() {
         buffer.destroy();
-        pass.destroy();
-        pipeline.destroy();
-        pool.destroy();
-        set.destroy();
-        VERT.destroy();
-        FRAG.destroy();
-        extents.free();
-        vbo.destroy();
-        VK13.nvkDestroyFramebuffer(logicalDevice.getDirect(VkDevice.class), fbo, 0);
-        frameBuffer.destroy();
         img.destroy();
-        compiler.destroy();
     }
 
     public void reset() {
@@ -397,7 +194,7 @@ public class Atlas {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Atlas atlas = (Atlas) o;
+        final Atlas atlas = (Atlas) o;
         return lastX == atlas.lastX && lastY == atlas.lastY && rwHeight == atlas.rwHeight && width == atlas.width && height == atlas.height && Objects.equals(logicalDevice, atlas.logicalDevice);
     }
 
@@ -408,5 +205,25 @@ public class Atlas {
 
     public float[] getBounds(char c) {
         return glyphBounds.get(c);
+    }
+
+    public void beginModifications() {
+        buffer.begin();
+        buffer.transition(
+                img.getHandle(), StageMask.TOP_OF_PIPE, StageMask.TOP_OF_PIPE,
+                ImageLayout.COLOR_ATTACHMENT_OPTIMAL, ImageLayout.TRANSFER_DST_OPTIMAL
+        );
+    }
+
+    public void submit() {
+        buffer.transition(
+                img.getHandle(), StageMask.TOP_OF_PIPE, StageMask.TOP_OF_PIPE,
+                ImageLayout.TRANSFER_DST_OPTIMAL, ImageLayout.SHADER_READONLY
+        );
+        buffer.end();
+        buffer.submit(logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS));
+        logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS).await();
+        rs.forEach(Runnable::run);
+        rs.clear();
     }
 }
