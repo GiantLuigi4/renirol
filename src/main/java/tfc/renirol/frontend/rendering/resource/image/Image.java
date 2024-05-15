@@ -18,7 +18,7 @@ import tfc.renirol.frontend.rendering.resource.image.texture.TextureSampler;
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 
 // TODO:
-public class Image implements ReniDestructable {
+public class Image implements ReniDestructable, ImageBacked{
     final ReniLogicalDevice logical;
     final VkDevice device;
 

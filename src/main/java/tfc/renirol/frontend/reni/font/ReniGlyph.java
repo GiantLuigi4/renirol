@@ -37,10 +37,20 @@ public class ReniGlyph implements ReniDestructable {
 
         left = face.glyph().bitmap_left();
         top = face.glyph().bitmap_top();
-        buffer = face.glyph().bitmap().buffer(
+        final ByteBuffer bu = face.glyph().bitmap().buffer(
                 (width = face.glyph().bitmap().width()) *
                         (height = face.glyph().bitmap().rows())
         );
+        if (bu != null) {
+            final ByteBuffer cpy = MemoryUtil.memAlloc(
+                    width * height
+            );
+            MemoryUtil.memCopy(
+                    bu,
+                    cpy
+            );
+            buffer = cpy;
+        } else buffer = null;
 
         advanceX = face.glyph().advance().x();
         advanceY = face.glyph().advance().y();

@@ -35,6 +35,7 @@ import tfc.renirol.frontend.rendering.resource.image.texture.Texture;
 import tfc.renirol.frontend.rendering.resource.image.texture.TextureSampler;
 import tfc.renirol.frontend.reni.font.ReniGlyph;
 import tfc.renirol.util.ShaderCompiler;
+import tfc.renirol.util.reni.ImageUtil;
 import tfc.test.shared.ReniSetup;
 import tfc.test.shared.VertexElements;
 import tfc.test.shared.VertexFormats;
@@ -241,89 +242,133 @@ public class Atlas {
         if (glyph.buffer == null)
             return;
 
+        final boolean blitUpload = false;
+
+        Texture tx;
+        if (blitUpload) {
+            tx = new Texture(
+                    logicalDevice, glyph.width, glyph.height,
+                    TextureChannels.R, BitDepth.DEPTH_8,
+                    glyph.buffer.position(0),
+                    ImageLayout.TRANSFER_SRC_OPTIMAL
+            );
+        } else {
+            ByteBuffer buf;
+            tx = new Texture(
+                    logicalDevice, glyph.width, glyph.height,
+                    TextureChannels.RGBA, BitDepth.DEPTH_8,
+                    buf = ImageUtil.convertChannels(
+                            glyph.buffer.position(0),
+                            1, 4,
+                            false,
+                            ImageUtil.ConvertMode.BLACK_OPAQUE
+                    ),
+                    ImageLayout.TRANSFER_SRC_OPTIMAL
+            );
+            MemoryUtil.memFree(buf);
+        }
+
         float texelX = 1f / width;
         float texelY = 1f / height;
-
-        Texture tx = new Texture(
-                logicalDevice, glyph.width, glyph.height,
-                TextureChannels.R, BitDepth.DEPTH_8, glyph.buffer.position(0)
-        );
-
-        TextureSampler sampler = tx.createSampler(
-                WrapMode.CLAMP,
-                WrapMode.CLAMP,
-                FilterMode.LINEAR,
-                FilterMode.LINEAR,
-                MipmapMode.NEAREST,
-                false, 0f,
-                0f, 0f, 0f
-        );
-        ImageInfo info = new ImageInfo(tx, sampler);
-        set.bind(0, 0, DescriptorType.COMBINED_SAMPLED_IMAGE, info);
-
-        ByteBuffer data = vbo.createByteBuf();
-        FloatBuffer fb = data.asFloatBuffer();
 
         float left = lastX;
         float top = lastY;
         float right = left + glyph.width;
         float bottom = top + glyph.height;
 
-        left *= texelX;
-        top *= texelY;
-        right *= texelX;
-        bottom *= texelY;
-        fb.put(new float[]{
-                right, bottom, 1, 1,
-                left, bottom, 0, 1,
-                left, top, 0, 0,
+        if (blitUpload) {
+            TextureSampler sampler = tx.createSampler(
+                    WrapMode.CLAMP,
+                    WrapMode.CLAMP,
+                    FilterMode.LINEAR,
+                    FilterMode.LINEAR,
+                    MipmapMode.NEAREST,
+                    false, 0f,
+                    0f, 0f, 0f
+            );
+            ImageInfo info = new ImageInfo(tx, sampler);
+            set.bind(0, 0, DescriptorType.COMBINED_SAMPLED_IMAGE, info);
 
-                right, top, 1, 0,
-                right, bottom, 1, 1,
-                left, top, 0, 0,
-        });
+            ByteBuffer data = vbo.createByteBuf();
+            FloatBuffer fb = data.asFloatBuffer();
 
-//        buffer.begin();
-//        buffer.bufferData(vbo, 0, 4 * 4 * 6, data);
-//        buffer.end();
-//        buffer.submit(logicalDevice.getStandardQueue(ReniQueueType.TRANSFER));
-//        buffer.reset();
-        vbo.upload(0, data);
+            left *= texelX;
+            top *= texelY;
+            right *= texelX;
+            bottom *= texelY;
+            fb.put(new float[]{
+                    right, bottom, 1, 1,
+                    left, bottom, 0, 1,
+                    left, top, 0, 0,
 
-        // TODO: optimize (switch to copy image)
-        buffer.begin();
+                    right, top, 1, 0,
+                    right, bottom, 1, 1,
+                    left, top, 0, 0,
+            });
 
-        buffer.startLabel("atlas", 0, 0.5f, 0, 0.5f);
-        buffer.transition(
-                img.getHandle(), StageMask.TOP_OF_PIPE, StageMask.GRAPHICS,
-                ImageLayout.SHADER_READONLY, ImageLayout.COLOR_ATTACHMENT_OPTIMAL
-        );
+            vbo.upload(0, data);
+            MemoryUtil.memFree(data);
 
-        buffer.noClear();
-        buffer.beginPass(pass, fbo, extents);
-        buffer.bindPipe(pipeline);
-        buffer.bindDescriptor(BindPoint.GRAPHICS, pipeline, set);
+            // TODO: optimize (switch to copy image)
+            buffer.begin();
 
-        buffer.bindVbo(0, vbo);
-        buffer.draw(0, 6);
+            buffer.startLabel("atlas", 0, 0.5f, 0, 0.5f);
+            buffer.transition(
+                    img.getHandle(), StageMask.TOP_OF_PIPE, StageMask.GRAPHICS,
+                    ImageLayout.SHADER_READONLY, ImageLayout.COLOR_ATTACHMENT_OPTIMAL
+            );
 
-        buffer.endPass();
+            buffer.noClear();
+            buffer.beginPass(pass, fbo, extents);
+            buffer.bindPipe(pipeline);
+            buffer.bindDescriptor(BindPoint.GRAPHICS, pipeline, set);
 
-        buffer.transition(
-                img.getHandle(), StageMask.GRAPHICS, StageMask.TOP_OF_PIPE,
-                ImageLayout.COLOR_ATTACHMENT_OPTIMAL, ImageLayout.SHADER_READONLY
-        );
+            buffer.bindVbo(0, vbo);
+            buffer.draw(0, 6);
 
-        buffer.endLabel();
-        buffer.end();
-        buffer.submit(logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS));
-        buffer.reset();
+            buffer.endPass();
 
-        info.destroy();
-        sampler.destroy();
+            buffer.transition(
+                    img.getHandle(), StageMask.GRAPHICS, StageMask.TOP_OF_PIPE,
+                    ImageLayout.COLOR_ATTACHMENT_OPTIMAL, ImageLayout.SHADER_READONLY
+            );
+
+            buffer.endLabel();
+            buffer.end();
+            buffer.submit(logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS));
+            buffer.reset();
+
+            info.destroy();
+            sampler.destroy();
+        } else {
+            // TODO: get working?
+            buffer.begin();
+            buffer.transition(
+                    img.getHandle(), StageMask.TOP_OF_PIPE, StageMask.TOP_OF_PIPE,
+                    ImageLayout.COLOR_ATTACHMENT_OPTIMAL, ImageLayout.TRANSFER_DST_OPTIMAL
+            );
+            buffer.end();
+            buffer.submit(logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS));
+            logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS).await();
+
+            buffer.begin();
+            buffer.copyImage(
+                    tx, ImageLayout.TRANSFER_SRC_OPTIMAL,
+                    0, 0,
+                    img, ImageLayout.TRANSFER_DST_OPTIMAL,
+                    (int) left, (int) top,
+                    (int) (right - left), (int) (bottom - top)
+            );
+            buffer.transition(
+                    img.getHandle(), StageMask.TOP_OF_PIPE, StageMask.TOP_OF_PIPE,
+                    ImageLayout.TRANSFER_DST_OPTIMAL, ImageLayout.SHADER_READONLY
+            );
+            buffer.end();
+            buffer.submit(logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS));
+            logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS).await();
+        }
+
         tx.destroy();
-
-        MemoryUtil.memFree(data);
     }
 
     public void destroy() {

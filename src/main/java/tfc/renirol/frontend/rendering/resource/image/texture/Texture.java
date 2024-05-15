@@ -18,6 +18,7 @@ import tfc.renirol.frontend.enums.modes.image.FilterMode;
 import tfc.renirol.frontend.enums.modes.image.MipmapMode;
 import tfc.renirol.frontend.enums.modes.image.WrapMode;
 import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
+import tfc.renirol.frontend.rendering.resource.image.ImageBacked;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -26,8 +27,8 @@ import java.nio.ShortBuffer;
 
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 
-// TODO: extend from image
-public class Texture implements ReniDestructable {
+// TODO: extend from image instead of using itf
+public class Texture implements ReniDestructable, ImageBacked {
     final VkDevice device;
 
     public Texture(ReniLogicalDevice device, TextureFormat format, TextureChannels channels, BitDepth depth, InputStream data) {
@@ -43,7 +44,7 @@ public class Texture implements ReniDestructable {
             default -> throw new RuntimeException("Unsupported texture format " + format.name());
         }
         MemoryUtil.memFree(buffer);
-        create(device);
+        create(device, null);
     }
 
     private final GPUBuffer data;
@@ -65,7 +66,7 @@ public class Texture implements ReniDestructable {
             }
             default -> throw new RuntimeException("Unsupported texture format " + format.name());
         }
-        create(device);
+        create(device, null);
     }
 
     public Texture(ReniLogicalDevice device, int width, int height, TextureChannels channels, BitDepth depth, ByteBuffer data) {
@@ -74,12 +75,21 @@ public class Texture implements ReniDestructable {
         this.channels = channels;
         this.bitDepth = depth;
         this.data = loadRaw(device, width, height, channels, depth, data);
-        create(device);
+        create(device, null);
+    }
+
+    public Texture(ReniLogicalDevice device, int width, int height, TextureChannels channels, BitDepth depth, ByteBuffer data, ImageLayout layout) {
+        this.device = device.getDirect(VkDevice.class);
+
+        this.channels = channels;
+        this.bitDepth = depth;
+        this.data = loadRaw(device, width, height, channels, depth, data);
+        create(device, layout);
     }
 
     long memory = 0;
 
-    protected void create(ReniLogicalDevice device) {
+    protected void create(ReniLogicalDevice device, ImageLayout layout) {
         int format;
 
         VkImageCreateInfo imageInfo = VkImageCreateInfo.calloc();
@@ -161,7 +171,7 @@ public class Texture implements ReniDestructable {
             buffer.begin();
             buffer.transition(
                     handle, StageMask.TOP_OF_PIPE, StageMask.TOP_OF_PIPE,
-                    ImageLayout.TRANSFER_DST_OPTIMAL, ImageLayout.SHADER_READONLY
+                    ImageLayout.TRANSFER_DST_OPTIMAL, layout == null ? ImageLayout.SHADER_READONLY : layout
             );
             buffer.endLabel();
             buffer.end();

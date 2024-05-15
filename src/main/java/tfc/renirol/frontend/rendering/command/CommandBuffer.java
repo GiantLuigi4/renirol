@@ -23,6 +23,7 @@ import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.enums.ImageLayout;
 import tfc.renirol.frontend.rendering.pass.RenderPass;
 import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorSet;
+import tfc.renirol.frontend.rendering.resource.image.ImageBacked;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -437,6 +438,35 @@ public class CommandBuffer implements ReniDestructable {
         VK13.nvkCmdCopyBuffer(
                 cmd,
                 src.getHandle(), dst.getHandle(),
+                1, regions.address()
+        );
+        regions.free();
+    }
+
+    public void copyImage(
+            ImageBacked src, ImageLayout srcLayout,
+            int srcX, int srcY,
+            ImageBacked dst, ImageLayout dstLayout,
+            int dstX, int dstY,
+            int extX, int extY
+    ) {
+        VkImageCopy.Buffer regions = VkImageCopy.calloc(1);
+        regions.get(0).srcOffset().set(srcX, srcY, 0);
+        regions.get(0).dstOffset().set(dstX, dstY, 0);
+        regions.get(0).extent().set(extX, extY, 1);
+
+        regions.srcSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+        regions.srcSubresource().baseArrayLayer(0);
+        regions.srcSubresource().layerCount(1);
+        regions.srcSubresource().mipLevel(0);
+        regions.dstSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+        regions.dstSubresource().baseArrayLayer(0);
+        regions.dstSubresource().layerCount(1);
+        regions.dstSubresource().mipLevel(0);
+
+        VK13.nvkCmdCopyImage(
+                cmd, src.getHandle(), srcLayout.value,
+                dst.getHandle(), dstLayout.value,
                 1, regions.address()
         );
         regions.free();
