@@ -102,6 +102,8 @@ public class TextRenderer implements ReniDestructable {
 
         for (char c : text.toCharArray()) {
             AtlasInfo inf = getAtlas(c);
+
+            // TODO: in the event that somehow a buffer fills all the way up, transition that buffer to a "completed" buffer pool and create a new one
             ByteBuffer buf = buffer.computeIfAbsent(inf, (k) -> draw.createByteBuf());
             FloatBuffer fb = buf.asFloatBuffer();
             // vec2 offset
@@ -345,6 +347,4 @@ public class TextRenderer implements ReniDestructable {
     public int hashCode() {
         return Objects.hash(quad, draw, qIndicies, atlasWidth, atlasHeight, device);
     }
-
-
 }
