@@ -4,31 +4,34 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
-import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
-import tfc.renirol.frontend.hardware.device.ReniQueueType;
-import tfc.renirol.frontend.hardware.util.ReniDestructable;
-import tfc.renirol.frontend.rendering.ReniQueue;
 import tfc.renirol.frontend.enums.BindPoint;
+import tfc.renirol.frontend.enums.ImageLayout;
+import tfc.renirol.frontend.enums.IndexSize;
 import tfc.renirol.frontend.enums.flags.ShaderStageFlags;
 import tfc.renirol.frontend.enums.flags.SwapchainUsage;
+import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.enums.modes.CompareOp;
 import tfc.renirol.frontend.enums.modes.CullMode;
 import tfc.renirol.frontend.enums.modes.FrontFace;
 import tfc.renirol.frontend.enums.modes.PrimitiveType;
-import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
+import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
+import tfc.renirol.frontend.hardware.device.ReniQueueType;
+import tfc.renirol.frontend.rendering.ReniQueue;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
 import tfc.renirol.frontend.rendering.debug.DebugMarker;
-import tfc.renirol.frontend.enums.IndexSize;
-import tfc.renirol.frontend.enums.masks.StageMask;
-import tfc.renirol.frontend.enums.ImageLayout;
 import tfc.renirol.frontend.rendering.pass.RenderPass;
+import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
 import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorSet;
 import tfc.renirol.frontend.rendering.resource.image.ImageBacked;
+import tfc.renirol.itf.ReniDestructable;
+import tfc.renirol.itf.ReniTaggable;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -46,7 +49,7 @@ import static org.lwjgl.vulkan.VK10.*;
  * On VK:
  *      this represents a VkCommandBuffer
  */
-public class CommandBuffer implements ReniDestructable {
+public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuffer> {
     final VkDevice device;
     final boolean ownPool;
     final long pool;
@@ -500,5 +503,34 @@ public class CommandBuffer implements ReniDestructable {
                 cmd, buffer.getHandle(),
                 start, amount, MemoryUtil.memAddress(data)
         );
+    }
+
+    List<ByteBuffer> bufs = new ArrayList<>();
+
+    @Override
+    public CommandBuffer setName(String name) {
+        for (ByteBuffer buf : bufs) MemoryUtil.memFree(buf);
+        bufs.clear();
+
+        VkDebugUtilsObjectNameInfoEXT objectNameInfoEXT = VkDebugUtilsObjectNameInfoEXT.create();
+        objectNameInfoEXT.sType(EXTDebugUtils.VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT);
+        objectNameInfoEXT.objectType(VK_OBJECT_TYPE_COMMAND_BUFFER);
+        objectNameInfoEXT.objectHandle(buffers.get(0));
+        ByteBuffer buf = MemoryUtil.memUTF8(name);
+        objectNameInfoEXT.pObjectName(buf);
+        // TODO: this does not work
+        //       why?
+        EXTDebugUtils.vkSetDebugUtilsObjectNameEXT(device, objectNameInfoEXT);
+        bufs.add(buf);
+        if (ownPool) {
+            buf = MemoryUtil.memUTF8(name + " (pool)");
+            objectNameInfoEXT.objectType(VK_OBJECT_TYPE_COMMAND_POOL);
+            objectNameInfoEXT.objectHandle(pool);
+            objectNameInfoEXT.pObjectName(buf);
+            EXTDebugUtils.vkSetDebugUtilsObjectNameEXT(device, objectNameInfoEXT);
+            bufs.add(buf);
+        }
+        objectNameInfoEXT.free();
+        return this;
     }
 }

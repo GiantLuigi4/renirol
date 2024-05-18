@@ -2,10 +2,10 @@ package tfc.renirol.frontend.rendering.resource.buffer;
 
 import org.lwjgl.vulkan.VkVertexInputAttributeDescription;
 import org.lwjgl.vulkan.VkVertexInputBindingDescription;
-import tfc.renirol.frontend.hardware.util.ReniDestructable;
+import tfc.renirol.frontend.enums.IndexSize;
 import tfc.renirol.frontend.enums.flags.AdvanceRate;
 import tfc.renirol.frontend.enums.format.AttributeFormat;
-import tfc.renirol.frontend.enums.IndexSize;
+import tfc.renirol.itf.ReniDestructable;
 
 import java.util.ArrayList;
 

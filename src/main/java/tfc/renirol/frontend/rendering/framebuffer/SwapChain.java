@@ -3,13 +3,13 @@ package tfc.renirol.frontend.rendering.framebuffer;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
+import tfc.renirol.frontend.enums.flags.SwapchainUsage;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.hardware.device.support.image.ReniSwapchainCapabilities;
-import tfc.renirol.frontend.hardware.util.ReniDestructable;
-import tfc.renirol.frontend.enums.flags.SwapchainUsage;
 import tfc.renirol.frontend.rendering.pass.RenderPass;
 import tfc.renirol.frontend.rendering.selectors.FormatSelector;
+import tfc.renirol.itf.ReniDestructable;
 import tfc.renirol.util.Pair;
 
 import java.nio.IntBuffer;

@@ -1,4 +1,4 @@
-package tfc.renirol.frontend.hardware.util;
+package tfc.renirol.itf;
 
 import java.io.Closeable;
 import java.io.IOException;

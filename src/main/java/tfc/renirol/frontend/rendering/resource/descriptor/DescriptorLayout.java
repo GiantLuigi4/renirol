@@ -3,8 +3,8 @@ package tfc.renirol.frontend.rendering.resource.descriptor;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
-import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.enums.flags.DescriptorSetLayoutFlags;
+import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 
 import java.nio.IntBuffer;
 
@@ -60,7 +60,7 @@ public class DescriptorLayout {
                 MemoryUtil.memAddress(buf)
         ));
         ci[0].free();
-        flagsCI.free();
+//        flagsCI.free();
         MemoryUtil.memFree(buffer);
         infoBuffer.free();
     }

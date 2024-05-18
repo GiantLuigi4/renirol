@@ -1,6 +1,9 @@
 package tfc.test.shared;
 
-import org.lwjgl.vulkan.*;
+import org.lwjgl.vulkan.EXTDebugUtils;
+import org.lwjgl.vulkan.KHRSwapchain;
+import org.lwjgl.vulkan.NVLowLatency;
+import org.lwjgl.vulkan.VK13;
 import tfc.renirol.ReniContext;
 import tfc.renirol.Renirol;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
@@ -20,6 +23,7 @@ public class ReniSetup {
     public static final GenericWindow WINDOW;
 
     static {
+        System.out.println(ProcessHandle.current().pid());
         Setup.performanceSetup();
 //        if (Scenario.useRenderDoc) Setup.loadRenderdoc();
         if (!Renirol.BACKEND.equals("OpenGL"))

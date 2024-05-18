@@ -3,7 +3,7 @@ package tfc.renirol.frontend.rendering.fencing;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkDevice;
-import tfc.renirol.frontend.hardware.util.ReniDestructable;
+import tfc.renirol.itf.ReniDestructable;
 
 import java.nio.LongBuffer;
 

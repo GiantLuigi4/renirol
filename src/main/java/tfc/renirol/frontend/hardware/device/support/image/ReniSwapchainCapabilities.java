@@ -2,7 +2,7 @@ package tfc.renirol.frontend.hardware.device.support.image;
 
 import org.lwjgl.vulkan.VkSurfaceCapabilitiesKHR;
 import org.lwjgl.vulkan.VkSurfaceFormatKHR;
-import tfc.renirol.frontend.hardware.util.ReniDestructable;
+import tfc.renirol.itf.ReniDestructable;
 import tfc.renirol.util.Pair;
 
 import java.nio.IntBuffer;

@@ -14,11 +14,9 @@ import tfc.renirol.frontend.enums.modes.image.FilterMode;
 import tfc.renirol.frontend.enums.modes.image.MipmapMode;
 import tfc.renirol.frontend.enums.modes.image.WrapMode;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
-import tfc.renirol.frontend.hardware.util.ReniDestructable;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
 import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
-import tfc.renirol.frontend.rendering.pass.RenderPass;
 import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
 import tfc.renirol.frontend.rendering.resource.buffer.DataFormat;
 import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
@@ -27,12 +25,12 @@ import tfc.renirol.frontend.rendering.resource.descriptor.ImageInfo;
 import tfc.renirol.frontend.rendering.resource.image.texture.TextureSampler;
 import tfc.renirol.frontend.reni.font.ReniFont;
 import tfc.renirol.frontend.reni.font.ReniGlyph;
+import tfc.renirol.itf.ReniDestructable;
 import tfc.test.shared.VertexElements;
 import tfc.test.shared.VertexFormats;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -101,6 +99,12 @@ public class TextRenderer implements ReniDestructable {
         }
 
         for (char c : text.toCharArray()) {
+            if (c == '\n') {
+                x = 0;
+                y += font.height() * 4;
+                continue;
+            }
+
             AtlasInfo inf = getAtlas(c);
 
             // TODO: in the event that somehow a buffer fills all the way up, transition that buffer to a "completed" buffer pool and create a new one

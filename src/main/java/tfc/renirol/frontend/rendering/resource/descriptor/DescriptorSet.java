@@ -3,10 +3,10 @@ package tfc.renirol.frontend.rendering.resource.descriptor;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
-import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.enums.DescriptorType;
-import tfc.renirol.frontend.hardware.util.ReniDestructable;
+import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
+import tfc.renirol.itf.ReniDestructable;
 
 import java.nio.LongBuffer;
 
@@ -53,6 +53,7 @@ public class DescriptorSet implements ReniDestructable {
         writeDescriptorSet.sType(VK13.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
         VkDescriptorImageInfo.Buffer info = VkDescriptorImageInfo.calloc(1);
         info.put(0, buffer.getHandle());
+
         writeDescriptorSet.pImageInfo(info)
                 .descriptorCount(1)
                 .descriptorType(type.id)

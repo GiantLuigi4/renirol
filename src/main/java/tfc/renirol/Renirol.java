@@ -1,7 +1,7 @@
 package tfc.renirol;
 
-import tfc.renirol.frontend.hardware.util.ReniDestructable;
 import tfc.renirol.frontend.windowing.GenericWindow;
+import tfc.renirol.itf.ReniDestructable;
 
 import java.util.function.Supplier;
 

@@ -2,7 +2,7 @@ package tfc.renirol.frontend.rendering.resource.image.texture;
 
 import org.lwjgl.vulkan.VK13;
 import org.lwjgl.vulkan.VkDevice;
-import tfc.renirol.frontend.hardware.util.ReniDestructable;
+import tfc.renirol.itf.ReniDestructable;
 
 public class TextureSampler implements ReniDestructable {
     public final long handle;

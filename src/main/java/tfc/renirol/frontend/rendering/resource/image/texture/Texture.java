@@ -4,10 +4,6 @@ import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
-import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
-import tfc.renirol.frontend.hardware.device.ReniQueueType;
-import tfc.renirol.frontend.hardware.util.ReniDestructable;
-import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.enums.BufferUsage;
 import tfc.renirol.frontend.enums.ImageLayout;
 import tfc.renirol.frontend.enums.format.BitDepth;
@@ -17,18 +13,25 @@ import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.enums.modes.image.FilterMode;
 import tfc.renirol.frontend.enums.modes.image.MipmapMode;
 import tfc.renirol.frontend.enums.modes.image.WrapMode;
+import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
+import tfc.renirol.frontend.hardware.device.ReniQueueType;
+import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
 import tfc.renirol.frontend.rendering.resource.image.ImageBacked;
+import tfc.renirol.itf.ReniDestructable;
+import tfc.renirol.itf.ReniTaggable;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
-import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+import static org.lwjgl.vulkan.VK10.*;
 
 // TODO: extend from image instead of using itf
-public class Texture implements ReniDestructable, ImageBacked {
+public class Texture implements ReniDestructable, ImageBacked, ReniTaggable<Texture> {
     final VkDevice device;
 
     public Texture(ReniLogicalDevice device, TextureFormat format, TextureChannels channels, BitDepth depth, InputStream data) {
@@ -108,7 +111,16 @@ public class Texture implements ReniDestructable, ImageBacked {
 
         imageInfo.initialLayout(VK13.VK_IMAGE_LAYOUT_UNDEFINED);
 
-        imageInfo.usage(VK13.VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK13.VK_IMAGE_USAGE_SAMPLED_BIT);
+        imageInfo.usage(
+                VK13.VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK13.VK_IMAGE_USAGE_SAMPLED_BIT |
+                        (
+                                layout == null ? 0 :
+                                        switch (layout) {
+                                            case TRANSFER_SRC_OPTIMAL -> VK13.VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+                                            default -> 0;
+                                        }
+                        )
+        );
         imageInfo.sharingMode(VK13.VK_SHARING_MODE_EXCLUSIVE);
 
         imageInfo.samples(VK13.VK_SAMPLE_COUNT_1_BIT);
@@ -318,5 +330,40 @@ public class Texture implements ReniDestructable, ImageBacked {
         VK13.nvkDestroyImageView(device, view, 0);
         VK13.nvkDestroyImage(device, handle, 0);
         VK13.nvkFreeMemory(device, memory, 0);
+    }
+
+    List<ByteBuffer> bufs = new ArrayList<>();
+
+    @Override
+    public Texture setName(String name) {
+        for (ByteBuffer buf : bufs) MemoryUtil.memFree(buf);
+        bufs.clear();
+
+        VkDebugUtilsObjectNameInfoEXT objectNameInfoEXT = VkDebugUtilsObjectNameInfoEXT.create();
+        objectNameInfoEXT.sType(EXTDebugUtils.VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT);
+        objectNameInfoEXT.objectType(VK_OBJECT_TYPE_IMAGE);
+        objectNameInfoEXT.objectHandle(handle);
+        ByteBuffer buf = MemoryUtil.memUTF8(name);
+        objectNameInfoEXT.pObjectName(buf);
+        EXTDebugUtils.vkSetDebugUtilsObjectNameEXT(device, objectNameInfoEXT);
+        bufs.add(buf);
+        if (true) {
+            buf = MemoryUtil.memUTF8(name + " (view)");
+            objectNameInfoEXT.pObjectName(buf);
+            objectNameInfoEXT.objectHandle(view);
+            objectNameInfoEXT.objectType(VK_OBJECT_TYPE_IMAGE_VIEW);
+            EXTDebugUtils.vkSetDebugUtilsObjectNameEXT(device, objectNameInfoEXT);
+            bufs.add(buf);
+        }
+        if (true) {
+            buf = MemoryUtil.memUTF8(name + " (memory)");
+            objectNameInfoEXT.pObjectName(buf);
+            objectNameInfoEXT.objectHandle(memory);
+            objectNameInfoEXT.objectType(VK_OBJECT_TYPE_DEVICE_MEMORY);
+            EXTDebugUtils.vkSetDebugUtilsObjectNameEXT(device, objectNameInfoEXT);
+            bufs.add(buf);
+        }
+        objectNameInfoEXT.free();
+        return this;
     }
 }

@@ -4,7 +4,7 @@ import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
-import tfc.renirol.frontend.hardware.util.ReniDestructable;
+import tfc.renirol.itf.ReniDestructable;
 
 public class Semaphore implements ReniDestructable {
     public final long handle;

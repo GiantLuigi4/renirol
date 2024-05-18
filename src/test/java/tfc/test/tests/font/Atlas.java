@@ -1,15 +1,9 @@
 package tfc.test.tests.font;
 
 import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.util.shaderc.Shaderc;
-import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VK13;
-import org.lwjgl.vulkan.VkDevice;
-import org.lwjgl.vulkan.VkExtent2D;
-import tfc.renirol.frontend.enums.*;
-import tfc.renirol.frontend.enums.flags.DescriptorPoolFlags;
-import tfc.renirol.frontend.enums.flags.ShaderStageFlags;
-import tfc.renirol.frontend.enums.format.AttributeFormat;
+import tfc.renirol.frontend.enums.ImageLayout;
+import tfc.renirol.frontend.enums.flags.SwapchainUsage;
 import tfc.renirol.frontend.enums.format.BitDepth;
 import tfc.renirol.frontend.enums.format.TextureChannels;
 import tfc.renirol.frontend.enums.masks.StageMask;
@@ -17,32 +11,16 @@ import tfc.renirol.frontend.enums.modes.image.FilterMode;
 import tfc.renirol.frontend.enums.modes.image.MipmapMode;
 import tfc.renirol.frontend.enums.modes.image.WrapMode;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
-import tfc.renirol.frontend.enums.flags.SwapchainUsage;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
-import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
-import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
-import tfc.renirol.frontend.rendering.command.shader.Shader;
-import tfc.renirol.frontend.rendering.framebuffer.FrameBuffer;
-import tfc.renirol.frontend.rendering.pass.RenderPass;
-import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
-import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
-import tfc.renirol.frontend.rendering.resource.buffer.DataFormat;
-import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
-import tfc.renirol.frontend.rendering.resource.descriptor.*;
 import tfc.renirol.frontend.rendering.resource.image.Image;
 import tfc.renirol.frontend.rendering.resource.image.texture.Texture;
 import tfc.renirol.frontend.rendering.resource.image.texture.TextureSampler;
 import tfc.renirol.frontend.reni.font.ReniGlyph;
-import tfc.renirol.util.ShaderCompiler;
 import tfc.renirol.util.reni.ImageUtil;
-import tfc.test.shared.ReniSetup;
-import tfc.test.shared.VertexElements;
-import tfc.test.shared.VertexFormats;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
@@ -195,12 +173,12 @@ public class Atlas {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final Atlas atlas = (Atlas) o;
-        return lastX == atlas.lastX && lastY == atlas.lastY && rwHeight == atlas.rwHeight && width == atlas.width && height == atlas.height && Objects.equals(logicalDevice, atlas.logicalDevice);
+        return width == atlas.width && height == atlas.height && Objects.equals(logicalDevice, atlas.logicalDevice);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), lastX, lastY, rwHeight, width, height, logicalDevice);
+        return Objects.hash(super.hashCode(), width, height, logicalDevice);
     }
 
     public float[] getBounds(char c) {

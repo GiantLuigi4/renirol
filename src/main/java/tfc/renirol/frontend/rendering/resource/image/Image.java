@@ -3,22 +3,25 @@ package tfc.renirol.frontend.rendering.resource.image;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
+import tfc.renirol.frontend.enums.ImageLayout;
+import tfc.renirol.frontend.enums.flags.SwapchainUsage;
+import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.enums.modes.image.FilterMode;
 import tfc.renirol.frontend.enums.modes.image.MipmapMode;
 import tfc.renirol.frontend.enums.modes.image.WrapMode;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
-import tfc.renirol.frontend.hardware.util.ReniDestructable;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
-import tfc.renirol.frontend.enums.ImageLayout;
-import tfc.renirol.frontend.enums.flags.SwapchainUsage;
-import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.rendering.resource.image.texture.TextureSampler;
+import tfc.renirol.itf.ReniDestructable;
+import tfc.renirol.itf.ReniTaggable;
 
-import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+import java.nio.ByteBuffer;
+
+import static org.lwjgl.vulkan.VK10.*;
 
 // TODO:
-public class Image implements ReniDestructable, ImageBacked{
+public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image> {
     final ReniLogicalDevice logical;
     final VkDevice device;
 
@@ -192,5 +195,27 @@ public class Image implements ReniDestructable, ImageBacked{
         info.free();
 
         return new TextureSampler(sampler, device);
+    }
+
+    @Override
+    public Image setName(String name) {
+        VkDebugUtilsObjectNameInfoEXT objectNameInfoEXT = VkDebugUtilsObjectNameInfoEXT.create();
+        objectNameInfoEXT.sType(EXTDebugUtils.VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT);
+        objectNameInfoEXT.objectType(VK_OBJECT_TYPE_IMAGE);
+        objectNameInfoEXT.objectHandle(handle);
+        ByteBuffer buf = MemoryUtil.memUTF8(name);
+        objectNameInfoEXT.pObjectName(buf);
+        EXTDebugUtils.vkSetDebugUtilsObjectNameEXT(device, objectNameInfoEXT);
+        if (true) {
+            MemoryUtil.memFree(buf);
+            buf = MemoryUtil.memUTF8(name + " (view)");
+            objectNameInfoEXT.pObjectName(buf);
+            objectNameInfoEXT.objectHandle(view);
+            objectNameInfoEXT.objectType(VK_OBJECT_TYPE_IMAGE_VIEW);
+            EXTDebugUtils.vkSetDebugUtilsObjectNameEXT(device, objectNameInfoEXT);
+        }
+        MemoryUtil.memFree(buf);
+        objectNameInfoEXT.free();
+        return this;
     }
 }

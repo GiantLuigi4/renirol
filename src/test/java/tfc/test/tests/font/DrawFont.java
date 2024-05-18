@@ -1,21 +1,17 @@
 package tfc.test.tests.font;
 
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.util.freetype.FreeType;
 import org.lwjgl.util.shaderc.Shaderc;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VK13;
 import org.lwjgl.vulkan.VkDevice;
-import tfc.renirol.frontend.enums.*;
+import tfc.renirol.frontend.enums.DescriptorType;
+import tfc.renirol.frontend.enums.ImageLayout;
+import tfc.renirol.frontend.enums.Operation;
 import tfc.renirol.frontend.enums.flags.DescriptorPoolFlags;
 import tfc.renirol.frontend.enums.flags.ShaderStageFlags;
-import tfc.renirol.frontend.enums.format.AttributeFormat;
 import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
 import tfc.renirol.frontend.enums.masks.StageMask;
-import tfc.renirol.frontend.enums.modes.image.FilterMode;
-import tfc.renirol.frontend.enums.modes.image.MipmapMode;
-import tfc.renirol.frontend.enums.modes.image.WrapMode;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
@@ -23,22 +19,16 @@ import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
 import tfc.renirol.frontend.rendering.command.shader.Shader;
 import tfc.renirol.frontend.rendering.pass.RenderPass;
 import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
-import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
-import tfc.renirol.frontend.rendering.resource.buffer.DataFormat;
-import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
-import tfc.renirol.frontend.rendering.resource.descriptor.*;
-import tfc.renirol.frontend.rendering.resource.image.texture.TextureSampler;
+import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorLayout;
+import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorLayoutInfo;
+import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorPool;
+import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorSet;
 import tfc.renirol.frontend.reni.font.ReniFont;
-import tfc.renirol.frontend.reni.font.ReniGlyph;
 import tfc.renirol.frontend.windowing.glfw.GLFWWindow;
 import tfc.renirol.util.ShaderCompiler;
 import tfc.test.shared.ReniSetup;
-import tfc.test.shared.VertexElements;
-import tfc.test.shared.VertexFormats;
 
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 
 public class DrawFont {
     public static void main(String[] args) {
@@ -171,7 +161,7 @@ public class DrawFont {
                 buffer.startLabel("Draw Text", 0, 0.5f, 0, 0.5f);
                 renderer.draw(() -> {
                     buffer.beginPass(pass, fbo, ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
-                }, "Hello, how are you doing today! \"←\"", buffer, pipeline0, set);
+                }, "Hello, how are you doing today! \"←\"\nHi!! I am a second ililelne\nDon't worry about the illusion\nI can draw infinite lines of font (not really)\neeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\n\nThis text is using 13600 bytes to tell the GPU what\nto draw.", buffer, pipeline0, set);
                 buffer.endLabel();
                 buffer.endPass();
                 buffer.endLabel();

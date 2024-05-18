@@ -1,13 +1,19 @@
 package tfc.renirol.frontend.hardware.device;
 
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.rendering.ReniQueue;
-import tfc.renirol.util.Pair;
+import tfc.renirol.itf.ReniTaggable;
 
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
-public class ReniLogicalDevice {
+import static org.lwjgl.vulkan.VK10.VK_OBJECT_TYPE_DEVICE;
+
+public class ReniLogicalDevice implements ReniTaggable<ReniLogicalDevice> {
     private final VkDevice direct;
     public final ReniHardwareDevice hardware;
     protected final HashMap<ReniQueueType, Integer> standardIndices;
@@ -63,5 +69,24 @@ public class ReniLogicalDevice {
 
         memProperties.free();
         throw new RuntimeException("Failed to find suitable memory type!");
+    }
+
+    List<ByteBuffer> bufs = new ArrayList<>();
+
+    @Override
+    public ReniLogicalDevice setName(String name) {
+        for (ByteBuffer buf : bufs) MemoryUtil.memFree(buf);
+        bufs.clear();
+
+        VkDebugUtilsObjectNameInfoEXT objectNameInfoEXT = VkDebugUtilsObjectNameInfoEXT.create();
+        objectNameInfoEXT.sType(EXTDebugUtils.VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT);
+        objectNameInfoEXT.objectType(VK_OBJECT_TYPE_DEVICE);
+        objectNameInfoEXT.objectHandle(direct.address());
+        ByteBuffer buf = MemoryUtil.memUTF8(name);
+        objectNameInfoEXT.pObjectName(buf);
+        EXTDebugUtils.vkSetDebugUtilsObjectNameEXT(direct, objectNameInfoEXT);
+        bufs.add(buf);
+        objectNameInfoEXT.free();
+        return this;
     }
 }

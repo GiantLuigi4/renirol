@@ -4,18 +4,25 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
-import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
-import tfc.renirol.frontend.hardware.util.ReniDestructable;
 import tfc.renirol.frontend.enums.BufferUsage;
 import tfc.renirol.frontend.enums.IndexSize;
+import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
+import tfc.renirol.itf.ReniDestructable;
+import tfc.renirol.itf.ReniTaggable;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
-public class GPUBuffer implements ReniDestructable {
+import static org.lwjgl.vulkan.VK10.VK_OBJECT_TYPE_BUFFER;
+import static org.lwjgl.vulkan.VK10.VK_OBJECT_TYPE_DEVICE_MEMORY;
+
+public class GPUBuffer implements ReniDestructable, ReniTaggable<GPUBuffer> {
     ReniLogicalDevice device;
     long buffer;
     VkMemoryRequirements memRequirements = VkMemoryRequirements.calloc();
     long memory;
+    boolean ownMemory = false;
     long size;
 
     public GPUBuffer(ReniLogicalDevice device, long buffer, long memory, long size) {
@@ -104,6 +111,8 @@ public class GPUBuffer implements ReniDestructable {
 
         memory = VkUtil.getCheckedLong((buf) -> VK13.nvkAllocateMemory(device.getDirect(VkDevice.class), allocInfo.address(), 0, MemoryUtil.memAddress(buf)));
         VK13.vkBindBufferMemory(device.getDirect(VkDevice.class), buffer, memory, 0);
+
+        ownMemory = true;
     }
 
     public void upload(int offset, ByteBuffer data) {
@@ -151,5 +160,32 @@ public class GPUBuffer implements ReniDestructable {
         memRequirements.free();
         VkDevice device = this.device.getDirect(VkDevice.class);
         VK13.nvkDestroyBuffer(device, buffer, 0);
+    }
+
+    List<ByteBuffer> bufs = new ArrayList<>();
+
+    @Override
+    public GPUBuffer setName(String name) {
+        for (ByteBuffer buf : bufs) MemoryUtil.memFree(buf);
+        bufs.clear();
+
+        VkDebugUtilsObjectNameInfoEXT objectNameInfoEXT = VkDebugUtilsObjectNameInfoEXT.create();
+        objectNameInfoEXT.sType(EXTDebugUtils.VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT);
+        objectNameInfoEXT.objectType(VK_OBJECT_TYPE_BUFFER);
+        objectNameInfoEXT.objectHandle(buffer);
+        ByteBuffer buf = MemoryUtil.memUTF8(name);
+        objectNameInfoEXT.pObjectName(buf);
+        EXTDebugUtils.vkSetDebugUtilsObjectNameEXT(device.getDirect(VkDevice.class), objectNameInfoEXT);
+        bufs.add(buf);
+        if (ownMemory) {
+            buf = MemoryUtil.memUTF8(name + " (Memory)");
+            objectNameInfoEXT.pObjectName(buf);
+            objectNameInfoEXT.objectHandle(memory);
+            objectNameInfoEXT.objectType(VK_OBJECT_TYPE_DEVICE_MEMORY);
+            EXTDebugUtils.vkSetDebugUtilsObjectNameEXT(device.getDirect(VkDevice.class), objectNameInfoEXT);
+            bufs.add(buf);
+        }
+        objectNameInfoEXT.free();
+        return this;
     }
 }

@@ -2,7 +2,7 @@ package tfc.renirol.util.accel.memory;
 
 // TODO: pure java equivalent
 
-import tfc.renirol.frontend.hardware.util.ReniDestructable;
+import tfc.renirol.itf.ReniDestructable;
 import tfc.renirol.util.accel.memory.cpp.BestFitManager;
 import tfc.renirol.util.accel.memory.java.BestFitAllocator;
 

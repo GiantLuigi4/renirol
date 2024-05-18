@@ -1,10 +1,10 @@
 package tfc.renirol.frontend.rendering.resource.descriptor;
 
 import org.lwjgl.vulkan.VkDescriptorSetLayoutBinding;
-import tfc.renirol.frontend.hardware.util.ReniDestructable;
 import tfc.renirol.frontend.enums.DescriptorType;
 import tfc.renirol.frontend.enums.flags.DescriptorBindingFlags;
 import tfc.renirol.frontend.enums.flags.ShaderStageFlags;
+import tfc.renirol.itf.ReniDestructable;
 
 public class DescriptorLayoutInfo implements ReniDestructable {
     VkDescriptorSetLayoutBinding binding = VkDescriptorSetLayoutBinding.calloc();

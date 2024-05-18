@@ -6,10 +6,10 @@ import org.lwjgl.vulkan.VkDescriptorPoolCreateInfo;
 import org.lwjgl.vulkan.VkDescriptorPoolSize;
 import org.lwjgl.vulkan.VkDevice;
 import tfc.renirol.backend.vk.util.VkUtil;
-import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
-import tfc.renirol.frontend.hardware.util.ReniDestructable;
 import tfc.renirol.frontend.enums.DescriptorType;
 import tfc.renirol.frontend.enums.flags.DescriptorPoolFlags;
+import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
+import tfc.renirol.itf.ReniDestructable;
 
 public class DescriptorPool implements ReniDestructable {
     private final VkDevice device;

@@ -2,35 +2,37 @@ package tfc.test.tests.font;
 
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.util.freetype.FreeType;
 import org.lwjgl.util.shaderc.Shaderc;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VK13;
 import org.lwjgl.vulkan.VkDevice;
 import tfc.renirol.frontend.enums.*;
-import tfc.renirol.frontend.hardware.device.ReniQueueType;
-import tfc.renirol.frontend.rendering.command.CommandBuffer;
-import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
-import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
-import tfc.renirol.frontend.rendering.command.shader.Shader;
 import tfc.renirol.frontend.enums.flags.DescriptorPoolFlags;
 import tfc.renirol.frontend.enums.flags.ShaderStageFlags;
 import tfc.renirol.frontend.enums.format.AttributeFormat;
 import tfc.renirol.frontend.enums.format.BitDepth;
 import tfc.renirol.frontend.enums.format.TextureChannels;
-import tfc.renirol.frontend.enums.format.TextureFormat;
 import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
 import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.enums.modes.image.FilterMode;
 import tfc.renirol.frontend.enums.modes.image.MipmapMode;
 import tfc.renirol.frontend.enums.modes.image.WrapMode;
+import tfc.renirol.frontend.hardware.device.ReniQueueType;
+import tfc.renirol.frontend.rendering.command.CommandBuffer;
+import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
+import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
+import tfc.renirol.frontend.rendering.command.shader.Shader;
 import tfc.renirol.frontend.rendering.pass.RenderPass;
 import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
 import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
-import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
 import tfc.renirol.frontend.rendering.resource.buffer.DataFormat;
+import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
 import tfc.renirol.frontend.rendering.resource.descriptor.*;
 import tfc.renirol.frontend.rendering.resource.image.texture.Texture;
 import tfc.renirol.frontend.rendering.resource.image.texture.TextureSampler;
+import tfc.renirol.frontend.reni.font.ReniFont;
+import tfc.renirol.frontend.reni.font.ReniGlyph;
 import tfc.renirol.frontend.windowing.glfw.GLFWWindow;
 import tfc.renirol.util.ShaderCompiler;
 import tfc.test.shared.ReniSetup;
@@ -61,7 +63,7 @@ public class LoadSingle {
         final Shader VERT = new Shader(
                 compiler,
                 ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                read(LoadSingle.class.getClassLoader().getResourceAsStream("test/texture/shader.vert")),
+                read(LoadSingle.class.getClassLoader().getResourceAsStream("test/font/shader.vert")),
                 Shaderc.shaderc_glsl_vertex_shader,
                 VK10.VK_SHADER_STAGE_VERTEX_BIT,
                 "vert",
@@ -70,7 +72,7 @@ public class LoadSingle {
         final Shader FRAG = new Shader(
                 compiler,
                 ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                read(LoadSingle.class.getClassLoader().getResourceAsStream("test/texture/shader.frag")),
+                read(LoadSingle.class.getClassLoader().getResourceAsStream("test/font/shader.frag")),
                 Shaderc.shaderc_glsl_fragment_shader,
                 VK10.VK_SHADER_STAGE_FRAGMENT_BIT,
                 "frag",
@@ -129,11 +131,14 @@ public class LoadSingle {
         ibo.upload(0, indices);
         MemoryUtil.memFree(indices);
 
-        InputStream is = LoadSingle.class.getClassLoader().getResourceAsStream("test/texture/texture.png");
+        InputStream is = LoadSingle.class.getClassLoader().getResourceAsStream("test/font/help.ttf");
+        ReniFont font = new ReniFont(is);
+        font.setPixelSizes(0, 64);
+        ReniGlyph glyph = font.glyph('4', FreeType.FT_LOAD_DEFAULT);
         Texture texture = new Texture(
                 ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                TextureFormat.PNG, TextureChannels.RGBA,
-                BitDepth.DEPTH_8, is
+                glyph.width, glyph.height, TextureChannels.R,
+                BitDepth.DEPTH_8, glyph.buffer
         );
         TextureSampler sampler = texture.createSampler(
                 WrapMode.BORDER,
@@ -166,7 +171,7 @@ public class LoadSingle {
             buffer.clearColor(0, 0, 0, 1);
 
             while (!ReniSetup.WINDOW.shouldClose()) {
-                frame++;
+                frame = 90 + 45;
 
                 {
                     final FloatBuffer fb = buffer1.position(0).asFloatBuffer();

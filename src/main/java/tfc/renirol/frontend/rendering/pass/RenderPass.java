@@ -2,7 +2,7 @@ package tfc.renirol.frontend.rendering.pass;
 
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkDevice;
-import tfc.renirol.frontend.hardware.util.ReniDestructable;
+import tfc.renirol.itf.ReniDestructable;
 
 public class RenderPass implements ReniDestructable {
     public final long handle;
