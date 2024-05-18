@@ -34,11 +34,21 @@ public class DrawFont {
     public static void main(String[] args) {
         ReniSetup.initialize();
 
+        final RenderPass startPass;
+        {
+            RenderPassInfo info = new RenderPassInfo(ReniSetup.GRAPHICS_CONTEXT.getLogical(), ReniSetup.GRAPHICS_CONTEXT.getSurface());
+            startPass = info.colorAttachment(
+                    Operation.CLEAR, Operation.PERFORM,
+                    ImageLayout.UNDEFINED, ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
+                    ReniSetup.selector
+            ).dependency().subpass().create();
+            info.destroy();
+        }
         final RenderPass pass;
         {
             RenderPassInfo info = new RenderPassInfo(ReniSetup.GRAPHICS_CONTEXT.getLogical(), ReniSetup.GRAPHICS_CONTEXT.getSurface());
             pass = info.colorAttachment(
-                    Operation.CLEAR, Operation.PERFORM,
+                    Operation.PERFORM, Operation.PERFORM,
                     ImageLayout.COLOR_ATTACHMENT_OPTIMAL, ImageLayout.PRESENT,
                     ReniSetup.selector
             ).dependency().subpass().create();
@@ -104,6 +114,7 @@ public class DrawFont {
             renderer = new TextRenderer(
                     ReniSetup.GRAPHICS_CONTEXT.getLogical(), font,
                     1024, 1024
+//                    128, 128
             );
             font.setPixelSizes(0, 64);
 
@@ -142,14 +153,14 @@ public class DrawFont {
                 buffer.begin();
                 buffer.transition(
                         ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
-                        StageMask.GRAPHICS,
-                        StageMask.GRAPHICS,
-                        ImageLayout.PRESENT,
+                        StageMask.TOP_OF_PIPE,
+                        StageMask.DRAW,
+                        ImageLayout.UNDEFINED,
                         ImageLayout.COLOR_ATTACHMENT_OPTIMAL
                 );
 
                 buffer.startLabel("Main Pass", 0.5f, 0, 0, 0.5f);
-                buffer.beginPass(pass, fbo, ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
+                buffer.beginPass(startPass, fbo, ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
 
                 buffer.bindPipe(pipeline0);
                 buffer.viewportScissor(

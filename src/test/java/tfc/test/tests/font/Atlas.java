@@ -188,14 +188,14 @@ public class Atlas {
     public void beginModifications() {
         buffer.begin();
         buffer.transition(
-                img.getHandle(), StageMask.TOP_OF_PIPE, StageMask.TOP_OF_PIPE,
+                img.getHandle(), StageMask.TOP_OF_PIPE, StageMask.DRAW,
                 ImageLayout.COLOR_ATTACHMENT_OPTIMAL, ImageLayout.TRANSFER_DST_OPTIMAL
         );
     }
 
     public void submit() {
         buffer.transition(
-                img.getHandle(), StageMask.TOP_OF_PIPE, StageMask.TOP_OF_PIPE,
+                img.getHandle(), StageMask.DRAW, StageMask.TOP_OF_PIPE,
                 ImageLayout.TRANSFER_DST_OPTIMAL, ImageLayout.SHADER_READONLY
         );
         buffer.end();

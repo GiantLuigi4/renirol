@@ -25,7 +25,7 @@ public class ReniSetup {
     static {
         System.out.println(ProcessHandle.current().pid());
         Setup.performanceSetup();
-//        if (Scenario.useRenderDoc) Setup.loadRenderdoc();
+        if (Scenario.useRenderDoc) Setup.loadRenderdoc();
         if (!Renirol.BACKEND.equals("OpenGL"))
             Setup.noAPI();
         WINDOW = Scenario.useWinNT ? new WinNTWindow(

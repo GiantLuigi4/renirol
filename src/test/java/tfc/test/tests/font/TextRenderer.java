@@ -60,7 +60,6 @@ public class TextRenderer implements ReniDestructable {
             GraphicsPipeline pipeline0,
             DescriptorSet set
     ) {
-        cmd.bindDescriptor(BindPoint.GRAPHICS, pipeline0, set);
         cmd.bindVbo(0, quad);
         cmd.bindVbo(1, draw);
         cmd.bindIbo(IndexSize.INDEX_16, qIndicies);
@@ -145,7 +144,8 @@ public class TextRenderer implements ReniDestructable {
             cmd.endPass();
 
             set.bind(0, 0, DescriptorType.SAMPLED_IMAGE, k.info);
-            draw.upload(0, v.limit(), v);
+            cmd.bufferData(draw, 0, v.limit(), v.position(0));
+            cmd.bindDescriptor(BindPoint.GRAPHICS, pipeline0, set);
 
             startPass.run();
             cmd.bindVbo(1, draw);
@@ -309,13 +309,13 @@ public class TextRenderer implements ReniDestructable {
 
         draw = new GPUBuffer(
                 device,
-                BufferUsage.VERTEX,
+                BufferUsage.VERTEX_TRANSFER,
                 4086 * 4086
         );
         draw.allocate();
 
         uform = new GPUBuffer(
-                device, BufferUsage.UNIFORM,
+                device, BufferUsage.UNIFORM_TRANSFER,
                 4
         );
         uform.allocate();
