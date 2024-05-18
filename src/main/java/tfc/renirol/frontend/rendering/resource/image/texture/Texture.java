@@ -25,8 +25,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -164,25 +162,25 @@ public class Texture implements ReniDestructable, ImageBacked, ReniTaggable<Text
             buffer.begin();
             buffer.startLabel("upload", 0, 0, 0.5f, 0.5f);
             buffer.transition(
-                    handle, StageMask.TOP_OF_PIPE, StageMask.TOP_OF_PIPE,
+                    handle, StageMask.TOP_OF_PIPE, StageMask.DRAW,
                     ImageLayout.UNDEFINED, ImageLayout.TRANSFER_DST_OPTIMAL
             );
-            buffer.end();
-            buffer.submit(device.getStandardQueue(ReniQueueType.GRAPHICS));
-            buffer.reset();
-            buffer.begin();
+//            buffer.end();
+//            buffer.submit(device.getStandardQueue(ReniQueueType.GRAPHICS));
+//            buffer.reset();
+//            buffer.begin();
             VK13.vkCmdCopyBufferToImage(
                     buffer.getDirect(VkCommandBuffer.class),
                     data.getHandle(),
                     handle, VK13.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     inf
             );
-            buffer.end();
-            buffer.submit(device.getStandardQueue(ReniQueueType.GRAPHICS));
-            buffer.reset();
-            buffer.begin();
+//            buffer.end();
+//            buffer.submit(device.getStandardQueue(ReniQueueType.GRAPHICS));
+//            buffer.reset();
+//            buffer.begin();
             buffer.transition(
-                    handle, StageMask.TOP_OF_PIPE, StageMask.TOP_OF_PIPE,
+                    handle, StageMask.DRAW, StageMask.TOP_OF_PIPE,
                     ImageLayout.TRANSFER_DST_OPTIMAL, layout == null ? ImageLayout.SHADER_READONLY : layout
             );
             buffer.endLabel();
@@ -233,7 +231,7 @@ public class Texture implements ReniDestructable, ImageBacked, ReniTaggable<Text
 
         info.addressModeU(xWrap.id);
         info.addressModeV(yWrap.id);
-        info.addressModeW(VK13.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+        info.addressModeW(xWrap.id);
 
         info.anisotropyEnable(useAnisotropy);
         info.maxAnisotropy(anisotropy);
@@ -332,28 +330,24 @@ public class Texture implements ReniDestructable, ImageBacked, ReniTaggable<Text
         VK13.nvkFreeMemory(device, memory, 0);
     }
 
-    List<ByteBuffer> bufs = new ArrayList<>();
-
     @Override
     public Texture setName(String name) {
-        for (ByteBuffer buf : bufs) MemoryUtil.memFree(buf);
-        bufs.clear();
-
-        VkDebugUtilsObjectNameInfoEXT objectNameInfoEXT = VkDebugUtilsObjectNameInfoEXT.create();
+        VkDebugUtilsObjectNameInfoEXT objectNameInfoEXT = VkDebugUtilsObjectNameInfoEXT.malloc();
         objectNameInfoEXT.sType(EXTDebugUtils.VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT);
         objectNameInfoEXT.objectType(VK_OBJECT_TYPE_IMAGE);
         objectNameInfoEXT.objectHandle(handle);
+        objectNameInfoEXT.pNext(0);
         ByteBuffer buf = MemoryUtil.memUTF8(name);
         objectNameInfoEXT.pObjectName(buf);
         EXTDebugUtils.vkSetDebugUtilsObjectNameEXT(device, objectNameInfoEXT);
-        bufs.add(buf);
+        MemoryUtil.memFree(buf);
         if (true) {
             buf = MemoryUtil.memUTF8(name + " (view)");
             objectNameInfoEXT.pObjectName(buf);
             objectNameInfoEXT.objectHandle(view);
             objectNameInfoEXT.objectType(VK_OBJECT_TYPE_IMAGE_VIEW);
             EXTDebugUtils.vkSetDebugUtilsObjectNameEXT(device, objectNameInfoEXT);
-            bufs.add(buf);
+            MemoryUtil.memFree(buf);
         }
         if (true) {
             buf = MemoryUtil.memUTF8(name + " (memory)");
@@ -361,7 +355,7 @@ public class Texture implements ReniDestructable, ImageBacked, ReniTaggable<Text
             objectNameInfoEXT.objectHandle(memory);
             objectNameInfoEXT.objectType(VK_OBJECT_TYPE_DEVICE_MEMORY);
             EXTDebugUtils.vkSetDebugUtilsObjectNameEXT(device, objectNameInfoEXT);
-            bufs.add(buf);
+            MemoryUtil.memFree(buf);
         }
         objectNameInfoEXT.free();
         return this;

@@ -73,7 +73,6 @@ public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image>
 
         imageInfo.initialLayout(VK13.VK_IMAGE_LAYOUT_UNDEFINED);
 
-//        imageInfo.usage(VK13.VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK13.VK_IMAGE_USAGE_SAMPLED_BIT);
         imageInfo.usage(usage.id);
         imageInfo.sharingMode(VK13.VK_SHARING_MODE_EXCLUSIVE);
 
@@ -115,6 +114,7 @@ public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image>
             viewInfo.free();
         }
 
+        // TODO: is this necessary?
         CommandBuffer cmd = CommandBuffer.create(
                 logical, ReniQueueType.GRAPHICS,
                 true, false, true
@@ -172,7 +172,7 @@ public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image>
 
         info.addressModeU(xWrap.id);
         info.addressModeV(yWrap.id);
-        info.addressModeW(VK13.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+        info.addressModeW(xWrap.id);
 
         info.anisotropyEnable(useAnisotropy);
         info.maxAnisotropy(anisotropy);
@@ -199,22 +199,23 @@ public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image>
 
     @Override
     public Image setName(String name) {
-        VkDebugUtilsObjectNameInfoEXT objectNameInfoEXT = VkDebugUtilsObjectNameInfoEXT.create();
+        VkDebugUtilsObjectNameInfoEXT objectNameInfoEXT = VkDebugUtilsObjectNameInfoEXT.malloc();
         objectNameInfoEXT.sType(EXTDebugUtils.VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT);
         objectNameInfoEXT.objectType(VK_OBJECT_TYPE_IMAGE);
         objectNameInfoEXT.objectHandle(handle);
+        objectNameInfoEXT.pNext(0);
         ByteBuffer buf = MemoryUtil.memUTF8(name);
         objectNameInfoEXT.pObjectName(buf);
         EXTDebugUtils.vkSetDebugUtilsObjectNameEXT(device, objectNameInfoEXT);
+        MemoryUtil.memFree(buf);
         if (true) {
-            MemoryUtil.memFree(buf);
             buf = MemoryUtil.memUTF8(name + " (view)");
             objectNameInfoEXT.pObjectName(buf);
             objectNameInfoEXT.objectHandle(view);
             objectNameInfoEXT.objectType(VK_OBJECT_TYPE_IMAGE_VIEW);
             EXTDebugUtils.vkSetDebugUtilsObjectNameEXT(device, objectNameInfoEXT);
+            MemoryUtil.memFree(buf);
         }
-        MemoryUtil.memFree(buf);
         objectNameInfoEXT.free();
         return this;
     }

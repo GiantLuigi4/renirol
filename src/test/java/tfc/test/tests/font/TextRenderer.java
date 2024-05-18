@@ -293,6 +293,7 @@ public class TextRenderer implements ReniDestructable {
         });
         quad.upload(0, buffer);
         MemoryUtil.memFree(buffer);
+        quad.setName("Text Glyph Vertices");
 
         qIndicies = new GPUBuffer(device, BufferUsage.INDEX, 6 * 2);
         qIndicies.allocate();
@@ -306,6 +307,7 @@ public class TextRenderer implements ReniDestructable {
         sb.put(5, (short) 0);
         qIndicies.upload(0, buffer);
         MemoryUtil.memFree(buffer);
+        qIndicies.setName("Text Glyph Indices");
 
         draw = new GPUBuffer(
                 device,
@@ -313,12 +315,14 @@ public class TextRenderer implements ReniDestructable {
                 4086 * 4086
         );
         draw.allocate();
+        draw.setName("Text Draw");
 
         uform = new GPUBuffer(
                 device, BufferUsage.UNIFORM_TRANSFER,
                 4
         );
         uform.allocate();
+        uform.setName("Text Uniforms");
     }
 
     public AtlasInfo preload(char c) {

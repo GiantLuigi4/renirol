@@ -30,8 +30,6 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -505,30 +503,24 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
         );
     }
 
-    List<ByteBuffer> bufs = new ArrayList<>();
-
     @Override
     public CommandBuffer setName(String name) {
-        for (ByteBuffer buf : bufs) MemoryUtil.memFree(buf);
-        bufs.clear();
-
-        VkDebugUtilsObjectNameInfoEXT objectNameInfoEXT = VkDebugUtilsObjectNameInfoEXT.create();
+        VkDebugUtilsObjectNameInfoEXT objectNameInfoEXT = VkDebugUtilsObjectNameInfoEXT.malloc();
         objectNameInfoEXT.sType(EXTDebugUtils.VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT);
         objectNameInfoEXT.objectType(VK_OBJECT_TYPE_COMMAND_BUFFER);
         objectNameInfoEXT.objectHandle(buffers.get(0));
+        objectNameInfoEXT.pNext(0);
         ByteBuffer buf = MemoryUtil.memUTF8(name);
         objectNameInfoEXT.pObjectName(buf);
-        // TODO: this does not work
-        //       why?
         EXTDebugUtils.vkSetDebugUtilsObjectNameEXT(device, objectNameInfoEXT);
-        bufs.add(buf);
+        MemoryUtil.memFree(buf);
         if (ownPool) {
             buf = MemoryUtil.memUTF8(name + " (pool)");
             objectNameInfoEXT.objectType(VK_OBJECT_TYPE_COMMAND_POOL);
             objectNameInfoEXT.objectHandle(pool);
             objectNameInfoEXT.pObjectName(buf);
             EXTDebugUtils.vkSetDebugUtilsObjectNameEXT(device, objectNameInfoEXT);
-            bufs.add(buf);
+            MemoryUtil.memFree(buf);
         }
         objectNameInfoEXT.free();
         return this;

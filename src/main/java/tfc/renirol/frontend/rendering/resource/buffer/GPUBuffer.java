@@ -11,8 +11,6 @@ import tfc.renirol.itf.ReniDestructable;
 import tfc.renirol.itf.ReniTaggable;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.lwjgl.vulkan.VK10.VK_OBJECT_TYPE_BUFFER;
 import static org.lwjgl.vulkan.VK10.VK_OBJECT_TYPE_DEVICE_MEMORY;
@@ -162,28 +160,24 @@ public class GPUBuffer implements ReniDestructable, ReniTaggable<GPUBuffer> {
         VK13.nvkDestroyBuffer(device, buffer, 0);
     }
 
-    List<ByteBuffer> bufs = new ArrayList<>();
-
     @Override
     public GPUBuffer setName(String name) {
-        for (ByteBuffer buf : bufs) MemoryUtil.memFree(buf);
-        bufs.clear();
-
-        VkDebugUtilsObjectNameInfoEXT objectNameInfoEXT = VkDebugUtilsObjectNameInfoEXT.create();
+        VkDebugUtilsObjectNameInfoEXT objectNameInfoEXT = VkDebugUtilsObjectNameInfoEXT.malloc();
         objectNameInfoEXT.sType(EXTDebugUtils.VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT);
         objectNameInfoEXT.objectType(VK_OBJECT_TYPE_BUFFER);
         objectNameInfoEXT.objectHandle(buffer);
+        objectNameInfoEXT.pNext(0);
         ByteBuffer buf = MemoryUtil.memUTF8(name);
         objectNameInfoEXT.pObjectName(buf);
         EXTDebugUtils.vkSetDebugUtilsObjectNameEXT(device.getDirect(VkDevice.class), objectNameInfoEXT);
-        bufs.add(buf);
+        MemoryUtil.memFree(buf);
         if (ownMemory) {
             buf = MemoryUtil.memUTF8(name + " (Memory)");
             objectNameInfoEXT.pObjectName(buf);
             objectNameInfoEXT.objectHandle(memory);
             objectNameInfoEXT.objectType(VK_OBJECT_TYPE_DEVICE_MEMORY);
             EXTDebugUtils.vkSetDebugUtilsObjectNameEXT(device.getDirect(VkDevice.class), objectNameInfoEXT);
-            bufs.add(buf);
+            MemoryUtil.memFree(buf);
         }
         objectNameInfoEXT.free();
         return this;

@@ -143,7 +143,7 @@ public class DrawFont {
                     ReniSetup.GRAPHICS_CONTEXT.getLogical(),
                     ReniQueueType.GRAPHICS, true,
                     false
-            );
+            ).setName("Main Command Buffer");
             buffer.clearColor(0, 0, 0, 1);
 
             while (!ReniSetup.WINDOW.shouldClose()) {

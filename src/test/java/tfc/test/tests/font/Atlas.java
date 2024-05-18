@@ -65,11 +65,12 @@ public class Atlas {
     public Atlas(ReniLogicalDevice logicalDevice, int width, int height) {
         img = new Image(logicalDevice).setUsage(SwapchainUsage.GENERIC);
         img.create(this.width = width, this.height = height, VK13.VK_FORMAT_R8G8B8A8_SRGB);
+        img.setName("Atlas Image");
 
         buffer = CommandBuffer.create(
                 logicalDevice, ReniQueueType.GRAPHICS,
                 true, false
-        );
+        ).setName("Atlas Merge Commands");
         this.logicalDevice = logicalDevice;
     }
 
@@ -139,7 +140,7 @@ public class Atlas {
                         ImageUtil.ConvertMode.BLACK_OPAQUE
                 ),
                 ImageLayout.TRANSFER_SRC_OPTIMAL
-        );
+        ).setName("Tmp Image " + glyph.symbol);
         MemoryUtil.memFree(buf);
         rs.add(tx::destroy);
 

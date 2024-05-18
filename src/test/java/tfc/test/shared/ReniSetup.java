@@ -79,7 +79,10 @@ public class ReniSetup {
                                 .enableIfPossible(KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME)
                                 .enableIfPossible(NVLowLatency.VK_NV_LOW_LATENCY_EXTENSION_NAME)
                                 // TODO: should probably support shared pairs
-                                // i.e. split(shared(GRAPHICS, TRANSFER), shared(COMPUTE, TRANSFER))
+                                // requestPairedIndices(
+                                //      {GRAPHICS, TRANSFER},
+                                //      {COMPUTE, TRANSFER}
+                                // )
                                 .requestSharedIndices(
                                         // if compute pipeline is supported, then use it
                                         // elsewise, do not
