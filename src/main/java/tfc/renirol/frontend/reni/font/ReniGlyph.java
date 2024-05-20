@@ -19,8 +19,15 @@ public class ReniGlyph implements ReniDestructable {
     public final short descent;
 
     public final long bbLeft, bbRight, bbTop, bbBottom;
+    public final int glyphResX, glyphResY;
 
-    public ReniGlyph(char symbol, FT_Face face, int index, int flags) {
+    public ReniGlyph(
+            char symbol, FT_Face face, int index, int flags,
+            int glyphResX, int glyphResY
+    ) {
+        this.glyphResX = glyphResX;
+        this.glyphResY = glyphResY;
+
         this.index = index;
         this.symbol = symbol;
         int error = FreeType.FT_Load_Glyph(

@@ -69,6 +69,8 @@ void main() {
     float center = applyKernel(texSampler, inUV.xy).x;
     float right = applyKernel(texSampler, inUV.xy + vec2(ts.x / 1., 0)).x;
 
+//    vec4 res = vec4(px(center));
+
     ivec3 subpixel = ivec3(0, 1, 2);
 
     float distance = outColor.r;
@@ -77,15 +79,14 @@ void main() {
     float r = px(right);
 
     vec4 res = vec4(1);
-    res[subpixel.r] = l;
+    res[subpixel.r] = r;
     res[subpixel.g] = c;
-    res[subpixel.b] = r;
+    res[subpixel.b] = l;
 
     res.a = max(res.x, max(res.y, res.z));
-    res.xyz /= res.a;
-
-//    res *= vec4(gl_FragCoord.x / 1600, (1 - gl_FragCoord.x / 200), clamp((gl_FragCoord.x - 300) / 200, 0, 1), 1);
-//    res *= vec4(gl_FragCoord.x / 1600, (1 - gl_FragCoord.x / 200), clamp(1 - (gl_FragCoord.x - 400) / 200, 0, 1), 1);
+//    res.xyz /= res.a;
+    res.xyz += center;
+    res.xyz /= 2.;
 
     outColor = res;
 

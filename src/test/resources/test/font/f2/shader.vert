@@ -15,7 +15,7 @@ layout (push_constant) uniform cb {
 };
 
 void main() {
-    vec2 vPos = inPosition.xy * DrawBounds.xy + (1 - inPosition.xy) * DrawBounds.zw + (Offset.xy / 64);
+    vec2 vPos = inPosition.xy * DrawBounds.xy + (1 - inPosition.xy) * DrawBounds.zw + (Offset.xy);
     vPos /= fontHeight;
     gl_Position = vec4(((vPos - 1.)), 0, 1);
     outUV = inPosition * UVBounds.zw + ((1 - inPosition) * UVBounds.xy);

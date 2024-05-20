@@ -85,10 +85,15 @@ public class TextRenderer implements ReniDestructable {
         float[] scale = new float[1];
         GLFW.glfwGetMonitorContentScale(GLFW.glfwGetPrimaryMonitor(), scaleX, scale);
 
+//        float height = font.glyphResY() / 2;
+        float height = 32;
+        float ptHeight = 13;
+        float pxHeight = ptHeight * 1.333333f;
+
         {
             ByteBuffer buffer1 = MemoryUtil.memAlloc(4);
             FloatBuffer fb = buffer1.asFloatBuffer();
-            fb.put(0, font.unitsPerEM());
+            fb.put(0, (font.unitsPerEM() * height) / pxHeight);
             cmd.pushConstants(
                     pipeline0.layout.handle,
                     new ShaderStageFlags[]{ShaderStageFlags.VERTEX},
@@ -97,10 +102,12 @@ public class TextRenderer implements ReniDestructable {
             MemoryUtil.memFree(buffer1);
         }
 
+        float sclY = 64 / font.glyphResY();
+        float invScl = 1 / sclY;
         for (char c : text.toCharArray()) {
             if (c == '\n') {
                 x = 0;
-                y += font.height() * 4;
+                y += font.height() * 4 * invScl;
                 continue;
             }
 
@@ -109,19 +116,22 @@ public class TextRenderer implements ReniDestructable {
             // TODO: in the event that somehow a buffer fills all the way up, transition that buffer to a "completed" buffer pool and create a new one
             ByteBuffer buf = buffer.computeIfAbsent(inf, (k) -> draw.createByteBuf());
             FloatBuffer fb = buf.asFloatBuffer();
-            // vec2 offset
-            fb.put(x);
-            fb.put(y);
 
             ReniGlyph glyph = font.glyph(c, FreeType.FT_LOAD_CROP_BITMAP);
-            float bottom = ((font.height() + font.descender()) * 64) / font.unitsPerEM();
+            float bottom = (float) ((font.height() + font.descender()) * glyph.glyphResY) / font.unitsPerEM();
+
+            // vec2 offset
+            fb.put(x / ((float) glyph.glyphResX));
+            fb.put(y / ((float) glyph.glyphResY));
 
             // vec4 drawBounds
             // TODO: can pre-sum left&top into offset
-            fb.put(glyph.left);
-            fb.put(bottom - glyph.top);
-            fb.put(glyph.left + glyph.width);
-            fb.put(bottom + (glyph.height - glyph.top));
+            //       need to check for quirks with doing so
+            //       doing so also reduces calculations on the CPU
+            fb.put((glyph.left) * sclY);
+            fb.put((bottom - glyph.top) * sclY);
+            fb.put((glyph.left + glyph.width) * sclY);
+            fb.put(((bottom - glyph.top) + glyph.height) * sclY);
 
             float[] uvBounds = inf.atlas.getBounds(c);
             // vec4 uvBounds

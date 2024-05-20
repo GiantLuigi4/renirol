@@ -110,6 +110,7 @@ public class DrawFont {
         TextRenderer renderer;
         {
             InputStream is = DrawFont.class.getClassLoader().getResourceAsStream("test/font/font.ttf");
+//            InputStream is = DrawFont.class.getClassLoader().getResourceAsStream("test/font/help.ttf");
             font = new ReniFont(is);
             renderer = new TextRenderer(
                     ReniSetup.GRAPHICS_CONTEXT.getLogical(), font,

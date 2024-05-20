@@ -1,9 +1,6 @@
 package tfc.renirol.frontend.reni.font;
 
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.glfw.GLFW;
-import org.lwjgl.glfw.GLFWNativeWayland;
-import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.freetype.FT_Bitmap_Size;
 import org.lwjgl.util.freetype.FT_Face;
@@ -71,10 +68,19 @@ public class ReniFont {
         return new ReadOnlyList<>(builder);
     }
 
+    private int resX, resY;
+
     public void setPixelSizes(int width, int height) {
         int error = FreeType.FT_Set_Pixel_Sizes(
                 face, width, height
         );
+
+        // TODO: confirm logic?
+        //       max instead?
+        this.resX = width;
+        if (resX == 0) resX = height;
+        this.resY = height;
+        if (resY == 0) resY = width;
         if (error != 0) throw new RuntimeException("Failed to set pixel sizes: " + FreeType.FT_Error_String(error));
     }
 
@@ -82,7 +88,8 @@ public class ReniFont {
 
     public ReniGlyph glyph(char code, int flags) {
         return glyphs.computeIfAbsent(code, (k) -> new ReniGlyph(
-                code, face, FreeType.FT_Get_Char_Index(face, code), flags
+                code, face, FreeType.FT_Get_Char_Index(face, code), flags,
+                resX, resY
         ));
     }
 
@@ -104,5 +111,9 @@ public class ReniFont {
 
     public short descender() {
         return face.descender();
+    }
+
+    public float glyphResY() {
+        return resY;
     }
 }
