@@ -19,7 +19,6 @@ public class ReniDeviceFeatures {
 
     // apparently freeing the things stored by this is illegal, so apparently I need to cache this
     private final HashMap<Long, ReniSwapchainCapabilities> map = new HashMap<>();
-
     public ReniSwapchainCapabilities image(long surface) {
         if (map.containsKey(surface)) {
             ReniSwapchainCapabilities caps = map.get(surface);
@@ -67,6 +66,7 @@ public class ReniDeviceFeatures {
         map.put(surface, caps);
         return caps;
     }
+
 
     public final boolean computeShader;
     public final boolean instancing;

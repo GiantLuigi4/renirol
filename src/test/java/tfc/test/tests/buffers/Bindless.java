@@ -4,23 +4,20 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.shaderc.Shaderc;
 import org.lwjgl.vulkan.VK10;
-import org.lwjgl.vulkan.VK13;
-import org.lwjgl.vulkan.VkDevice;
 import tfc.renirol.frontend.enums.*;
-import tfc.renirol.frontend.hardware.device.ReniQueueType;
-import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.enums.flags.DescriptorBindingFlags;
 import tfc.renirol.frontend.enums.flags.DescriptorPoolFlags;
 import tfc.renirol.frontend.enums.flags.ShaderStageFlags;
 import tfc.renirol.frontend.enums.format.AttributeFormat;
-import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
-import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
-import tfc.renirol.frontend.rendering.resource.buffer.DataFormat;
+import tfc.renirol.frontend.hardware.device.ReniQueueType;
+import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
 import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
 import tfc.renirol.frontend.rendering.command.shader.Shader;
-import tfc.renirol.frontend.rendering.pass.RenderPass;
 import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
+import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
+import tfc.renirol.frontend.rendering.resource.buffer.DataFormat;
+import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
 import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorLayout;
 import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorLayoutInfo;
 import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorPool;
@@ -41,15 +38,14 @@ class Bindless {
         Scenario.FEATURES.add(tfc.renirol.frontend.hardware.device.feature.Bindless.INSTANCE);
         ReniSetup.initialize();
 
-        final RenderPass pass;
+        final RenderPassInfo pass;
         {
-            RenderPassInfo info = new RenderPassInfo(ReniSetup.GRAPHICS_CONTEXT.getLogical(), ReniSetup.GRAPHICS_CONTEXT.getSurface());
-            pass = info.colorAttachment(
+            pass = new RenderPassInfo(ReniSetup.GRAPHICS_CONTEXT.getLogical(), ReniSetup.GRAPHICS_CONTEXT.getSurface());
+            pass.colorAttachment(
                     Operation.CLEAR, Operation.PERFORM,
                     ImageLayout.COLOR_ATTACHMENT_OPTIMAL, ImageLayout.PRESENT,
                     ReniSetup.selector
-            ).dependency().subpass().create();
-            info.destroy();
+            );
         }
 
         final ShaderCompiler compiler = new ShaderCompiler();
@@ -122,7 +118,7 @@ class Bindless {
         uniformBuffer.allocate();
         set.bind(0, 0, DescriptorType.UNIFORM_BUFFER, uniformBuffer);
 
-        GraphicsPipeline pipeline0 = new GraphicsPipeline(state, pass, VERT, FRAG);
+        GraphicsPipeline pipeline0 = new GraphicsPipeline(pass, state, VERT, FRAG);
 
         final GPUBuffer vbo = new GPUBuffer(ReniSetup.GRAPHICS_CONTEXT.getLogical(), desc0, BufferUsage.VERTEX, 4);
         final GPUBuffer ibo = new GPUBuffer(ReniSetup.GRAPHICS_CONTEXT.getLogical(), IndexSize.INDEX_16, BufferUsage.INDEX, 6);
@@ -181,12 +177,11 @@ class Bindless {
                 }
 
                 ReniSetup.GRAPHICS_CONTEXT.prepareFrame(ReniSetup.WINDOW);
-                long fbo = ReniSetup.GRAPHICS_CONTEXT.getFrameHandle(pass);
 
                 buffer.begin();
 
                 buffer.startLabel("Main Pass", 0.5f, 0, 0, 0.5f);
-                buffer.beginPass(pass, fbo, ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
+                buffer.beginPass(pass, ReniSetup.GRAPHICS_CONTEXT.getChainBuffer(), ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
 
                 buffer.bindPipe(pipeline0);
                 buffer.bindDescriptor(BindPoint.GRAPHICS, pipeline0, set);
@@ -214,8 +209,6 @@ class Bindless {
                 GLFWWindow.poll();
 
                 ReniSetup.GRAPHICS_CONTEXT.getLogical().waitForIdle();
-
-                VK13.nvkDestroyFramebuffer(ReniSetup.GRAPHICS_CONTEXT.getLogical().getDirect(VkDevice.class), fbo, 0);
             }
             buffer.destroy();
         } catch (Throwable err) {

@@ -7,7 +7,6 @@ import tfc.renirol.frontend.enums.flags.SwapchainUsage;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.hardware.device.support.image.ReniSwapchainCapabilities;
-import tfc.renirol.frontend.rendering.pass.RenderPass;
 import tfc.renirol.frontend.rendering.selectors.FormatSelector;
 import tfc.renirol.itf.ReniDestructable;
 import tfc.renirol.util.Pair;
@@ -24,7 +23,7 @@ public class SwapChain implements ReniDestructable {
         return swapChain;
     }
 
-    List<FrameBuffer> buffers = new ArrayList<>();
+    List<SwapchainFrameBuffer> buffers = new ArrayList<>();
 
     ReniLogicalDevice device;
     long surface;
@@ -176,7 +175,7 @@ public class SwapChain implements ReniDestructable {
                 // create image view
                 viewCI.image(img);
                 VkUtil.check(VK10.nvkCreateImageView(device.getDirect(VkDevice.class), viewCI.address(), 0, addr));
-                buffers.add(new FrameBuffer(device.getDirect(VkDevice.class), img, buf.get(0), this));
+                buffers.add(new SwapchainFrameBuffer(device.getDirect(VkDevice.class), img, buf.get(0), this));
             }
 
             MemoryUtil.memFree(buffer);
@@ -193,7 +192,7 @@ public class SwapChain implements ReniDestructable {
     public void destroy() {
         if (initialized) {
             initialized = false;
-            for (FrameBuffer buffer : buffers)
+            for (SwapchainFrameBuffer buffer : buffers)
                 buffer.destroy();
             buffers.clear();
             extents.free();
@@ -214,10 +213,6 @@ public class SwapChain implements ReniDestructable {
         return extents;
     }
 
-    public long getHandle(int index, RenderPass pass) {
-        return buffers.get(index).forPass(pass);
-    }
-
     public void recreate(int width, int height) {
         destroy();
         create(
@@ -232,7 +227,7 @@ public class SwapChain implements ReniDestructable {
         );
     }
 
-    public FrameBuffer getFbo(int frameIndex) {
+    public SwapchainFrameBuffer getFbo(int frameIndex) {
         return buffers.get(frameIndex);
     }
 }

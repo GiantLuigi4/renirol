@@ -13,8 +13,8 @@ import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.fencing.Fence;
 import tfc.renirol.frontend.rendering.fencing.Semaphore;
 import tfc.renirol.frontend.rendering.framebuffer.ChainBuffer;
-import tfc.renirol.frontend.rendering.framebuffer.FrameBuffer;
 import tfc.renirol.frontend.rendering.framebuffer.SwapChain;
+import tfc.renirol.frontend.rendering.framebuffer.SwapchainFrameBuffer;
 import tfc.renirol.frontend.rendering.pass.RenderPass;
 import tfc.renirol.frontend.rendering.resource.image.Image;
 import tfc.renirol.frontend.windowing.GenericWindow;
@@ -130,7 +130,7 @@ public class ReniContext implements ReniDestructable {
                 (res) -> res
         );
         graphicsChain = new SwapChain(logical, surface);
-        buffer = new ChainBuffer(graphicsChain);
+        buffer = new ChainBuffer(frame, graphicsChain);
         semaphoreA = new Semaphore(logical);
         fenceA = semaphoreA.createFence();
         semaphoreB = new Semaphore(logical);
@@ -140,13 +140,13 @@ public class ReniContext implements ReniDestructable {
 
     public void createDepth() {
         additional.add(new Image(logical).setUsage(SwapchainUsage.DEPTH));
-        buffer = new ChainBuffer(graphicsChain, additional.toArray(new Image[0]));
+        buffer = new ChainBuffer(frame, graphicsChain, additional.toArray(new Image[0]));
         depthIdx = additional.size() - 1;
     }
 
     public void addBuffer(Image image) {
         additional.add(image);
-        buffer = new ChainBuffer(graphicsChain, additional.toArray(new Image[0]));
+        buffer = new ChainBuffer(frame, graphicsChain, additional.toArray(new Image[0]));
     }
 
     public void setupOffscreen() {
@@ -294,7 +294,7 @@ public class ReniContext implements ReniDestructable {
         getFenceImage().reset();
     }
 
-    public FrameBuffer getFramebuffer() {
+    public SwapchainFrameBuffer getFramebuffer() {
         return graphicsChain.getFbo(getFrameIndex());
     }
 
@@ -308,5 +308,9 @@ public class ReniContext implements ReniDestructable {
 
     public Image depthBuffer() {
         return additional.get(depthIdx);
+    }
+
+    public ChainBuffer getChainBuffer() {
+        return buffer;
     }
 }

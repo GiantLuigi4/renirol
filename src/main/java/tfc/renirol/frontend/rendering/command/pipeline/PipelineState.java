@@ -3,8 +3,8 @@ package tfc.renirol.frontend.rendering.command.pipeline;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
-import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
+import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
 import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorLayout;
 
@@ -13,7 +13,6 @@ import java.nio.LongBuffer;
 import java.util.ArrayList;
 
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
 public class PipelineState {
     final VkDevice device;
@@ -35,14 +34,6 @@ public class PipelineState {
     public PipelineState(ReniLogicalDevice device) {
         this.device = device.getDirect(VkDevice.class);
         dynamic.sType(VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
-
-//        {
-//            IntBuffer buf = MemoryUtil.memAllocInt(dynamicState.length);
-//            for (int i = 0; i < dynamicState.length; i++) {
-//                buf.put(i, dynamicState[i]);
-//            }
-//            dynamic.pDynamicStates(buf);
-//        }
 
         // vertex input
         vertexInputInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);

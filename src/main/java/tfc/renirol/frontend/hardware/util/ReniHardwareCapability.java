@@ -1,8 +1,7 @@
 package tfc.renirol.frontend.hardware.util;
 
-import org.lwjgl.vulkan.EXTMultiDraw;
+import org.lwjgl.vulkan.KHRDynamicRendering;
 import org.lwjgl.vulkan.KHRSwapchain;
-import org.lwjgl.vulkan.NVMeshShader;
 import tfc.renirol.frontend.hardware.device.ReniHardwareDevice;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
 
@@ -20,6 +19,7 @@ public class ReniHardwareCapability {
     public static final ReniHardwareCapability MULTIDRAW = new ReniHardwareCapability(dev -> dev.features.multidraw);
     public static final ReniHardwareCapability INSTANCING = new ReniHardwareCapability(dev -> dev.features.instancing);
     public static final ReniHardwareCapability SWAPCHAIN = new ReniHardwareCapability(dev -> dev.supportsExtension(KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME));
+    public static final ReniHardwareCapability DYNAMIC_RENDERNING = new ReniHardwareCapability(dev -> dev.supportsExtension(KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME));
 
     public final Predicate<ReniHardwareDevice> supportQuery;
 

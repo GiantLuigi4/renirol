@@ -19,7 +19,9 @@ import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.rendering.ReniQueue;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
 import tfc.renirol.frontend.rendering.debug.DebugMarker;
-import tfc.renirol.frontend.rendering.pass.RenderPass;
+import tfc.renirol.frontend.rendering.framebuffer.ChainBuffer;
+import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
+import tfc.renirol.frontend.rendering.pass.ReniPassAttachment;
 import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
 import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorSet;
 import tfc.renirol.frontend.rendering.resource.image.ImageBacked;
@@ -138,8 +140,6 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
         submitInfo.pWaitSemaphores(waitSemaphore);
         submitInfo.waitSemaphoreCount(1);
         submitInfo.pSignalSemaphores(signalSemaphore);
-
-        renderPassInfo.sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
     }
 
     public void reset() {
@@ -197,7 +197,7 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
     }
 
     public void endPass() {
-        VK10.vkCmdEndRenderPass(cmd);
+        VK13.vkCmdEndRendering(cmd);
     }
 
     public void cullMode(CullMode mode) {
@@ -274,16 +274,51 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
         info.free();
     }
 
-    final VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.calloc();
+    public void beginPass(RenderPassInfo pass, ChainBuffer buffer, VkExtent2D extents) {
+        VkRenderingInfo info = VkRenderingInfo.calloc();
+        info.sType$Default();
 
-    public void beginPass(RenderPass pass, long frameHandle, VkExtent2D extents) {
-        renderPassInfo.renderPass(pass.handle);
-        renderPassInfo.framebuffer(frameHandle);
+        info.renderArea().offset(offset2D);
+        info.renderArea().extent(extents);
+        VkRenderingAttachmentInfo.Buffer buffer1 = VkRenderingAttachmentInfo.calloc(pass.getColorAttachments().size());
+        int index = 0;
+        VkRenderingAttachmentInfo depthInf = null;
+        for (ReniPassAttachment attachment : pass.getAttachments()) {
+            VkRenderingAttachmentInfo attachmentInfo;
 
-        renderPassInfo.renderArea().offset(offset2D);
-        renderPassInfo.renderArea().extent(extents);
+            if (attachment.isDepth)
+                depthInf = attachmentInfo = VkRenderingAttachmentInfo.calloc();
+            else attachmentInfo = buffer1.get(index);
+            attachmentInfo.sType$Default();
 
-        VK10.nvkCmdBeginRenderPass(cmd, renderPassInfo.address(), VK10.VK_SUBPASS_CONTENTS_INLINE);
+            attachmentInfo.loadOp(attachment.load.load);
+            attachmentInfo.storeOp(attachment.store.store);
+
+            if (!noClear) {
+                if (attachment.isDepth) attachmentInfo.clearValue(clearValues.get(index));
+                else attachmentInfo.clearValue(clearValues.get(index));
+            }
+
+            attachmentInfo.imageLayout(attachment.initialLayout.value);
+            attachmentInfo.resolveImageLayout(attachment.targetLayout.value);
+
+            attachmentInfo.imageView(buffer.getView(index));
+
+            if (attachment.isDepth)
+                info.pDepthAttachment(attachmentInfo);
+
+            index++;
+        }
+        info.pColorAttachments(buffer1);
+        info.layerCount(1);
+
+        VK13.nvkCmdBeginRendering(
+                cmd, info.address()
+        );
+
+        info.free();
+        if (depthInf != null)
+            depthInf.free();
     }
 
     final VkClearValue.Buffer clearColor = VkClearValue.calloc(1);
@@ -297,8 +332,7 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
         buffer1.put(2, b);
         buffer1.put(3, a);
 
-        renderPassInfo.clearValueCount(1);
-        renderPassInfo.pClearValues(clearColor);
+        noClear = false;
     }
 
     public void clearDepth(float depth) {
@@ -306,8 +340,8 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
 
         clearValues.put(0, clearColor.get(0));
         clearValues.put(1, depthColor.get(0));
-        renderPassInfo.clearValueCount(2);
-        renderPassInfo.pClearValues(clearValues);
+
+        noClear = false;
     }
 
     public void clearStencil(int value) {
@@ -315,8 +349,8 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
 
         clearValues.put(0, clearColor.get(0));
         clearValues.put(1, depthColor.get(0));
-        renderPassInfo.clearValueCount(2);
-        renderPassInfo.pClearValues(clearValues);
+
+        noClear = false;
     }
 
     public void transition(
@@ -379,9 +413,10 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
         barrier.free();
     }
 
+    boolean noClear = true;
+
     public void noClear() {
-        renderPassInfo.clearValueCount(0);
-        renderPassInfo.pClearValues(null);
+        noClear = true;
     }
 
     public void bindVbo(int slot, GPUBuffer ebo) {

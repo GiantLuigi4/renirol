@@ -4,14 +4,7 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.shaderc.Shaderc;
 import org.lwjgl.vulkan.VK10;
-import org.lwjgl.vulkan.VK13;
-import org.lwjgl.vulkan.VkDevice;
 import tfc.renirol.frontend.enums.*;
-import tfc.renirol.frontend.hardware.device.ReniQueueType;
-import tfc.renirol.frontend.rendering.command.CommandBuffer;
-import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
-import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
-import tfc.renirol.frontend.rendering.command.shader.Shader;
 import tfc.renirol.frontend.enums.flags.DescriptorPoolFlags;
 import tfc.renirol.frontend.enums.flags.ShaderStageFlags;
 import tfc.renirol.frontend.enums.format.AttributeFormat;
@@ -22,7 +15,11 @@ import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
 import tfc.renirol.frontend.enums.modes.image.FilterMode;
 import tfc.renirol.frontend.enums.modes.image.MipmapMode;
 import tfc.renirol.frontend.enums.modes.image.WrapMode;
-import tfc.renirol.frontend.rendering.pass.RenderPass;
+import tfc.renirol.frontend.hardware.device.ReniQueueType;
+import tfc.renirol.frontend.rendering.command.CommandBuffer;
+import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
+import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
+import tfc.renirol.frontend.rendering.command.shader.Shader;
 import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
 import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
 import tfc.renirol.frontend.rendering.resource.buffer.DataFormat;
@@ -46,10 +43,10 @@ public class DepthBuffer {
         Scenario.useDepth = true;
         ReniSetup.initialize();
 
-        final RenderPass pass;
+        final RenderPassInfo pass;
         {
-            RenderPassInfo info = new RenderPassInfo(ReniSetup.GRAPHICS_CONTEXT.getLogical(), ReniSetup.GRAPHICS_CONTEXT.getSurface());
-            pass = info.colorAttachment(
+            pass = new RenderPassInfo(ReniSetup.GRAPHICS_CONTEXT.getLogical(), ReniSetup.GRAPHICS_CONTEXT.getSurface());
+            pass.colorAttachment(
                     Operation.CLEAR, Operation.NONE,
                     ImageLayout.UNDEFINED, ImageLayout.PRESENT,
                     ReniSetup.selector
@@ -57,8 +54,7 @@ public class DepthBuffer {
                     Operation.CLEAR, Operation.NONE,
                     ImageLayout.UNDEFINED, ImageLayout.DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                     ReniSetup.DEPTH_FORMAT
-            ).dependency().subpass().create();
-            info.destroy();
+            );
         }
 
         final ShaderCompiler compiler = new ShaderCompiler();
@@ -156,7 +152,7 @@ public class DepthBuffer {
         ImageInfo info = new ImageInfo(texture, sampler);
         set.bind(0, 0, DescriptorType.COMBINED_SAMPLED_IMAGE, info);
 
-        GraphicsPipeline pipeline0 = new GraphicsPipeline(state, pass, VERT, FRAG);
+        GraphicsPipeline pipeline0 = new GraphicsPipeline(pass, state, VERT, FRAG);
 
         try {
             is.close();
@@ -212,12 +208,11 @@ public class DepthBuffer {
                 }
 
                 ReniSetup.GRAPHICS_CONTEXT.prepareFrame(ReniSetup.WINDOW);
-                long fbo = ReniSetup.GRAPHICS_CONTEXT.getFrameHandle(pass);
 
                 buffer.begin();
 
                 buffer.startLabel("Main Pass", 0.5f, 0, 0, 0.5f);
-                buffer.beginPass(pass, fbo, ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
+                buffer.beginPass(pass, ReniSetup.GRAPHICS_CONTEXT.getChainBuffer(), ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
 
                 buffer.bindPipe(pipeline0);
                 buffer.bindDescriptor(BindPoint.GRAPHICS, pipeline0, set);
@@ -253,8 +248,6 @@ public class DepthBuffer {
                 GLFWWindow.poll();
 
                 ReniSetup.GRAPHICS_CONTEXT.getLogical().waitForIdle();
-
-                VK13.nvkDestroyFramebuffer(ReniSetup.GRAPHICS_CONTEXT.getLogical().getDirect(VkDevice.class), fbo, 0);
             }
             buffer.destroy();
         } catch (Throwable err) {

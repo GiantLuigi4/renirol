@@ -4,22 +4,19 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.shaderc.Shaderc;
 import org.lwjgl.vulkan.VK10;
-import org.lwjgl.vulkan.VK13;
-import org.lwjgl.vulkan.VkDevice;
 import tfc.renirol.frontend.enums.BufferUsage;
 import tfc.renirol.frontend.enums.ImageLayout;
 import tfc.renirol.frontend.enums.Operation;
+import tfc.renirol.frontend.enums.format.AttributeFormat;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
-import tfc.renirol.frontend.enums.format.AttributeFormat;
-import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
-import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
-import tfc.renirol.frontend.rendering.resource.buffer.DataFormat;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
 import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
 import tfc.renirol.frontend.rendering.command.shader.Shader;
-import tfc.renirol.frontend.rendering.pass.RenderPass;
 import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
+import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
+import tfc.renirol.frontend.rendering.resource.buffer.DataFormat;
+import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
 import tfc.renirol.frontend.windowing.glfw.GLFWWindow;
 import tfc.renirol.util.ShaderCompiler;
 import tfc.test.shared.ReniSetup;
@@ -34,15 +31,14 @@ public class VBOs {
     public static void main(String[] args) {
         ReniSetup.initialize();
 
-        RenderPass pass;
+        RenderPassInfo pass;
         {
-            RenderPassInfo info = new RenderPassInfo(ReniSetup.GRAPHICS_CONTEXT.getLogical(), ReniSetup.GRAPHICS_CONTEXT.getSurface());
-            pass = info.colorAttachment(
+            pass = new RenderPassInfo(ReniSetup.GRAPHICS_CONTEXT.getLogical(), ReniSetup.GRAPHICS_CONTEXT.getSurface());
+            pass.colorAttachment(
                     Operation.CLEAR, Operation.PERFORM,
                     ImageLayout.COLOR_ATTACHMENT_OPTIMAL, ImageLayout.PRESENT,
                     ReniSetup.selector
-            ).dependency().subpass().create();
-            info.destroy();
+            );
         }
 
         ShaderCompiler compiler = new ShaderCompiler();
@@ -78,7 +74,7 @@ public class VBOs {
 
         state.vertexInput(desc0);
 
-        GraphicsPipeline pipeline0 = new GraphicsPipeline(state, pass, VERT, FRAG);
+        GraphicsPipeline pipeline0 = new GraphicsPipeline(pass, state, VERT, FRAG);
 
         GPUBuffer vbo = new GPUBuffer(ReniSetup.GRAPHICS_CONTEXT.getLogical(), desc0, BufferUsage.VERTEX, 6);
         vbo.allocate();
@@ -126,12 +122,11 @@ public class VBOs {
                 }
 
                 ReniSetup.GRAPHICS_CONTEXT.prepareFrame(ReniSetup.WINDOW);
-                long fbo = ReniSetup.GRAPHICS_CONTEXT.getFrameHandle(pass);
 
                 buffer.begin();
 
                 buffer.startLabel("Main Pass", 0.5f, 0, 0, 0.5f);
-                buffer.beginPass(pass, fbo, ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
+                buffer.beginPass(pass, ReniSetup.GRAPHICS_CONTEXT.getChainBuffer(), ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
 
                 buffer.bindPipe(pipeline0);
                 buffer.viewportScissor(
@@ -153,8 +148,6 @@ public class VBOs {
                 GLFWWindow.poll();
 
                 ReniSetup.GRAPHICS_CONTEXT.getLogical().waitForIdle();
-
-                VK13.nvkDestroyFramebuffer(ReniSetup.GRAPHICS_CONTEXT.getLogical().getDirect(VkDevice.class), fbo, 0);
             }
             buffer.destroy();
         } catch (Throwable err) {

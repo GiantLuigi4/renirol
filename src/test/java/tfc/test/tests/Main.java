@@ -2,15 +2,15 @@ package tfc.test.tests;
 
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.util.shaderc.Shaderc;
-import org.lwjgl.vulkan.*;
+import org.lwjgl.vulkan.VK10;
+import tfc.renirol.frontend.enums.ImageLayout;
+import tfc.renirol.frontend.enums.Operation;
+import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
 import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
 import tfc.renirol.frontend.rendering.command.shader.Shader;
-import tfc.renirol.frontend.enums.ImageLayout;
-import tfc.renirol.frontend.enums.Operation;
-import tfc.renirol.frontend.rendering.pass.RenderPass;
 import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
 import tfc.renirol.frontend.windowing.glfw.GLFWWindow;
 import tfc.renirol.util.ShaderCompiler;
@@ -23,15 +23,14 @@ public class Main {
     public static void main(String[] args) {
         ReniSetup.initialize();
 
-        RenderPass pass;
+        RenderPassInfo pass;
         {
-            RenderPassInfo info = new RenderPassInfo(ReniSetup.GRAPHICS_CONTEXT.getLogical(), ReniSetup.GRAPHICS_CONTEXT.getSurface());
-            pass = info.colorAttachment(
-                    Operation.DONT_CARE, Operation.PERFORM,
+            pass = new RenderPassInfo(ReniSetup.GRAPHICS_CONTEXT.getLogical(), ReniSetup.GRAPHICS_CONTEXT.getSurface());
+            pass.colorAttachment(
+                    Operation.CLEAR, Operation.PERFORM,
                     ImageLayout.COLOR_ATTACHMENT_OPTIMAL, ImageLayout.PRESENT,
                     ReniSetup.selector
-            ).dependency().subpass().create();
-            info.destroy();
+            );
         }
 
         ShaderCompiler compiler = new ShaderCompiler();
@@ -56,8 +55,8 @@ public class Main {
         );
 
         PipelineState state = new PipelineState(ReniSetup.GRAPHICS_CONTEXT.getLogical());
-        state.dynamicState();
-        GraphicsPipeline pipeline0 = new GraphicsPipeline(state, pass, VERT, FRAG);
+        state.dynamicState(DynamicStateMasks.BLEND);
+        GraphicsPipeline pipeline0 = new GraphicsPipeline(pass, state, VERT, FRAG);
 
         try {
             ReniSetup.WINDOW.grabContext();
@@ -66,16 +65,15 @@ public class Main {
                     ReniQueueType.GRAPHICS, true,
                     false
             );
-            buffer.noClear();
+            buffer.clearColor(0, 0, 0, 1);
 
             while (!ReniSetup.WINDOW.shouldClose()) {
                 ReniSetup.GRAPHICS_CONTEXT.prepareFrame(ReniSetup.WINDOW);
-                long fbo = ReniSetup.GRAPHICS_CONTEXT.getFrameHandle(pass);
 
                 buffer.begin();
 
                 buffer.startLabel("Main Pass", 0.5f, 0, 0, 0.5f);
-                buffer.beginPass(pass, fbo, ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
+                buffer.beginPass(pass, ReniSetup.GRAPHICS_CONTEXT.getChainBuffer(), ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
                 buffer.bindPipe(pipeline0);
                 buffer.viewportScissor(
                         0, 0,
@@ -94,8 +92,6 @@ public class Main {
                 GLFWWindow.poll();
 
                 ReniSetup.GRAPHICS_CONTEXT.getLogical().waitForIdle();
-
-                VK13.nvkDestroyFramebuffer(ReniSetup.GRAPHICS_CONTEXT.getLogical().getDirect(VkDevice.class), fbo, 0);
             }
             buffer.destroy();
         } catch (Throwable err) {

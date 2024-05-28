@@ -8,6 +8,7 @@ import tfc.renirol.frontend.enums.BufferUsage;
 import tfc.renirol.frontend.enums.DescriptorType;
 import tfc.renirol.frontend.enums.IndexSize;
 import tfc.renirol.frontend.enums.flags.AdvanceRate;
+import tfc.renirol.frontend.enums.flags.DescriptorPoolFlags;
 import tfc.renirol.frontend.enums.flags.ShaderStageFlags;
 import tfc.renirol.frontend.enums.format.AttributeFormat;
 import tfc.renirol.frontend.enums.modes.image.FilterMode;
@@ -20,12 +21,12 @@ import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
 import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
 import tfc.renirol.frontend.rendering.resource.buffer.DataFormat;
 import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
-import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorSet;
-import tfc.renirol.frontend.rendering.resource.descriptor.ImageInfo;
+import tfc.renirol.frontend.rendering.resource.descriptor.*;
 import tfc.renirol.frontend.rendering.resource.image.texture.TextureSampler;
 import tfc.renirol.frontend.reni.font.ReniFont;
 import tfc.renirol.frontend.reni.font.ReniGlyph;
 import tfc.renirol.itf.ReniDestructable;
+import tfc.test.shared.ReniSetup;
 import tfc.test.shared.VertexElements;
 import tfc.test.shared.VertexFormats;
 
@@ -40,12 +41,21 @@ import java.util.Objects;
 public class TextRenderer implements ReniDestructable {
     public final ReniFont font;
 
+    private final DescriptorLayout layout;
+
     public void destroy() {
         for (AtlasInfo atlas : atlases) {
             atlas.atlas.destroy();
             atlas.info.destroy();
             atlas.sampler.destroy();
+            atlas.set.destroy();
+            atlas.pool.destroy();
         }
+        draw.destroy();
+        uform.destroy();
+        quad.destroy();
+        qIndicies.destroy();
+        layout.destroy();
     }
 
     GPUBuffer quad;
@@ -57,8 +67,7 @@ public class TextRenderer implements ReniDestructable {
             Runnable startPass,
             String text,
             CommandBuffer cmd,
-            GraphicsPipeline pipeline0,
-            DescriptorSet set
+            GraphicsPipeline pipeline0
     ) {
         cmd.bindVbo(0, quad);
         cmd.bindVbo(1, draw);
@@ -153,9 +162,9 @@ public class TextRenderer implements ReniDestructable {
             int count = v.limit() / MEMORY_FOOTPRINT;
             cmd.endPass();
 
-            set.bind(0, 0, DescriptorType.SAMPLED_IMAGE, k.info);
+            k.set.bind(0, 0, DescriptorType.SAMPLED_IMAGE, k.info);
             cmd.bufferData(draw, 0, v.limit(), v.position(0));
-            cmd.bindDescriptor(BindPoint.GRAPHICS, pipeline0, set);
+            cmd.bindDescriptor(BindPoint.GRAPHICS, pipeline0, k.set);
 
             startPass.run();
             cmd.bindVbo(1, draw);
@@ -204,26 +213,39 @@ public class TextRenderer implements ReniDestructable {
         private final Atlas atlas;
         private final TextureSampler sampler;
         private final ImageInfo info;
+        private final DescriptorSet set;
+        private final DescriptorPool pool;
 
-        private AtlasInfo(Atlas atlas, TextureSampler sampler, ImageInfo info) {
+        private AtlasInfo(Atlas atlas, TextureSampler sampler, ImageInfo info, DescriptorLayout layout) {
             this.modifying = false;
             this.atlas = atlas;
             this.sampler = sampler;
             this.info = info;
+
+            pool = new DescriptorPool(
+                    ReniSetup.GRAPHICS_CONTEXT.getLogical(),
+                    1,
+                    new DescriptorPoolFlags[0],
+                    DescriptorPool.PoolInfo.of(DescriptorType.COMBINED_SAMPLED_IMAGE, 10)
+            );
+            set = new DescriptorSet(
+                    ReniSetup.GRAPHICS_CONTEXT.getLogical(),
+                    pool, layout
+            );
         }
 
-        private static AtlasInfo create(Atlas atlas) {
+        private static AtlasInfo create(Atlas atlas, DescriptorLayout layout) {
             TextureSampler sampler = atlas.createSampler(
                     WrapMode.BORDER,
                     WrapMode.BORDER,
                     FilterMode.LINEAR,
                     FilterMode.LINEAR,
                     MipmapMode.NEAREST,
-                    false, 16f,
+                    false, 0f,
                     0f, 0f, 0f
             );
             ImageInfo info = new ImageInfo(atlas.getImage(), sampler);
-            return new AtlasInfo(atlas, sampler, info);
+            return new AtlasInfo(atlas, sampler, info, layout);
         }
 
         public boolean addGlyph(ReniGlyph glyph) {
@@ -333,6 +355,18 @@ public class TextRenderer implements ReniDestructable {
         );
         uform.allocate();
         uform.setName("Text Uniforms");
+
+        final DescriptorLayoutInfo info = new DescriptorLayoutInfo(
+                0, DescriptorType.COMBINED_SAMPLED_IMAGE,
+                1, ShaderStageFlags.FRAGMENT
+        );
+
+        layout = new DescriptorLayout(
+                ReniSetup.GRAPHICS_CONTEXT.getLogical(),
+                0, info
+        );
+
+        info.destroy();
     }
 
     public AtlasInfo preload(char c) {
@@ -346,7 +380,7 @@ public class TextRenderer implements ReniDestructable {
         }
         Atlas newAt;
         AtlasInfo inf;
-        atlases.add(inf = AtlasInfo.create(newAt = new Atlas(device, atlasWidth, atlasHeight)));
+        atlases.add(inf = AtlasInfo.create(newAt = new Atlas(device, atlasWidth, atlasHeight), layout));
         inf.startModify();
         newAt.addGlyph(glyph);
         infs.put(c, inf);
@@ -364,5 +398,9 @@ public class TextRenderer implements ReniDestructable {
     @Override
     public int hashCode() {
         return Objects.hash(quad, draw, qIndicies, atlasWidth, atlasHeight, device);
+    }
+
+    public DescriptorLayout getLayout() {
+        return layout;
     }
 }

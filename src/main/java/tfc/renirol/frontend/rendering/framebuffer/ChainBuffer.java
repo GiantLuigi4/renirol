@@ -8,6 +8,7 @@ import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.rendering.pass.RenderPass;
 import tfc.renirol.frontend.rendering.resource.image.Image;
 
+import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -15,10 +16,12 @@ import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 public class ChainBuffer {
     SwapChain chain;
     Image[] attachmentArray;
+    IntBuffer currentFrame;
 
-    public ChainBuffer(SwapChain chain, Image... attachments) {
+    public ChainBuffer(IntBuffer currentFrame, SwapChain chain, Image... attachments) {
         this.chain = chain;
         this.attachmentArray = attachments;
+        this.currentFrame = currentFrame;
     }
 
     public void recreate(int width, int height) {
@@ -50,5 +53,10 @@ public class ChainBuffer {
 
         framebufferInfo.free();
         return fbo;
+    }
+
+    public long getView(int index) {
+        if (index == 0) return chain.getFbo(currentFrame.get(0)).view;
+        return attachmentArray[index - 1].getView();
     }
 }

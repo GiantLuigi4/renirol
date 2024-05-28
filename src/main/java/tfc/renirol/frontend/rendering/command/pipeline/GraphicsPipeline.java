@@ -1,19 +1,16 @@
 package tfc.renirol.frontend.rendering.command.pipeline;
 
 import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.vulkan.VK10;
-import org.lwjgl.vulkan.VkDevice;
-import org.lwjgl.vulkan.VkGraphicsPipelineCreateInfo;
-import org.lwjgl.vulkan.VkPipelineShaderStageCreateInfo;
+import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.rendering.command.shader.Shader;
-import tfc.renirol.frontend.rendering.pass.RenderPass;
+import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
+import tfc.renirol.frontend.rendering.pass.ReniPassAttachment;
+
+import java.nio.IntBuffer;
+import java.util.List;
 
 public class GraphicsPipeline {
-    public GraphicsPipeline(PipelineState layout, RenderPass pass, Shader... shaders) {
-        this(layout, pass.handle, shaders);
-    }
-
     public final long handle;
     public final VkDevice device;
     public final PipelineLayout layout;
@@ -24,7 +21,7 @@ public class GraphicsPipeline {
         this.layout = new PipelineLayout(layout, device);
     }
 
-    public GraphicsPipeline(PipelineState layout, long pass, Shader... shaders) {
+    public GraphicsPipeline(RenderPassInfo info, PipelineState layout, Shader... shaders) {
         this.layout = layout.create();
 
         VkGraphicsPipelineCreateInfo pipelineInfo = VkGraphicsPipelineCreateInfo.calloc();
@@ -48,8 +45,27 @@ public class GraphicsPipeline {
 
         pipelineInfo.layout(this.layout.handle);
 
-        pipelineInfo.renderPass(pass);
-        pipelineInfo.subpass(0);
+        VkPipelineRenderingCreateInfo renderingCreateInfo;
+        IntBuffer colorAttachments;
+        {
+            List<ReniPassAttachment> attachments = info.getColorAttachments();
+
+            renderingCreateInfo = VkPipelineRenderingCreateInfo.calloc().sType$Default();
+
+            renderingCreateInfo.colorAttachmentCount(attachments.size());
+            colorAttachments = MemoryUtil.memAllocInt(renderingCreateInfo.colorAttachmentCount());
+
+            for (int i = 0; i < attachments.size(); i++)
+                colorAttachments.put(i, attachments.get(i).format);
+
+            renderingCreateInfo.pColorAttachmentFormats(colorAttachments);
+
+            for (ReniPassAttachment depthAttachment : info.getDepthAttachments()) {
+                renderingCreateInfo.depthAttachmentFormat(depthAttachment.format);
+            }
+
+            pipelineInfo.pNext(renderingCreateInfo);
+        }
 
         // TODO: likely important to expose!
         pipelineInfo.basePipelineHandle(0); // Optional
@@ -62,6 +78,8 @@ public class GraphicsPipeline {
 
         buffer.free();
         pipelineInfo.free();
+        renderingCreateInfo.free();
+        MemoryUtil.memFree(colorAttachments);
     }
 
     public void destroy() {

@@ -1,12 +1,11 @@
 package tfc.test.shared;
 
-import org.lwjgl.vulkan.EXTDebugUtils;
-import org.lwjgl.vulkan.KHRSwapchain;
-import org.lwjgl.vulkan.NVLowLatency;
-import org.lwjgl.vulkan.VK13;
+import org.lwjgl.vulkan.*;
 import tfc.renirol.ReniContext;
 import tfc.renirol.Renirol;
+import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
+import tfc.renirol.frontend.hardware.device.feature.DynamicRendering;
 import tfc.renirol.frontend.hardware.device.support.image.ReniSwapchainCapabilities;
 import tfc.renirol.frontend.hardware.util.DeviceQuery;
 import tfc.renirol.frontend.hardware.util.ReniHardwareCapability;
@@ -63,6 +62,7 @@ public class ReniSetup {
                         .require(ReniHardwareCapability.SUPPORTS_INDICES.configured(
                                 ReniQueueType.GRAPHICS, ReniQueueType.TRANSFER
                         ))
+                        .require(ReniHardwareCapability.DYNAMIC_RENDERNING)
                         .reniRecommended()
                         // if any integrated GPU meets the requirements, then filter out any non-dedicated GPU
 //                        .prioritizeIntegrated()
@@ -76,7 +76,8 @@ public class ReniSetup {
         GRAPHICS_CONTEXT.withLogical(
                 Scenario.configureDevice(
                         GRAPHICS_CONTEXT.getHardware().createLogical()
-                                .enableIfPossible(KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+                                .enable(KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+//                                .enable(KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
                                 .enableIfPossible(NVLowLatency.VK_NV_LOW_LATENCY_EXTENSION_NAME)
                                 // TODO: should probably support shared pairs
                                 // requestPairedIndices(
@@ -90,6 +91,7 @@ public class ReniSetup {
                                                 new ReniQueueType[]{ReniQueueType.GRAPHICS, ReniQueueType.TRANSFER, ReniQueueType.COMPUTE} :
                                                 new ReniQueueType[]{ReniQueueType.GRAPHICS, ReniQueueType.TRANSFER}
                                 )
+                                .with(DynamicRendering.INSTANCE)
                 ).create()
         );
         WINDOW.initContext(GRAPHICS_CONTEXT);
@@ -115,7 +117,29 @@ public class ReniSetup {
                 ReniSetup.WINDOW.getHeight(),
                 selector,
                 Math.min(capabilities.surfaceCapabilities.minImageCount() + 2, capabilities.surfaceCapabilities.maxImageCount()),
-                capabilities.presentModes.get(0)
+                VkUtil.select(
+                        capabilities.presentModes,
+                        mode -> {
+                            switch (mode) {
+                                case KHRSurface.VK_PRESENT_MODE_IMMEDIATE_KHR -> {
+                                    return 0;
+                                }
+                                case KHRSurface.VK_PRESENT_MODE_MAILBOX_KHR -> {
+                                    return 3;
+                                }
+                                case KHRSurface.VK_PRESENT_MODE_FIFO_RELAXED_KHR -> {
+                                    return 2;
+                                }
+                                case KHRSurface.VK_PRESENT_MODE_FIFO_KHR -> {
+                                    return 1;
+                                }
+                                default -> {
+                                    System.err.println("Unknown present mode: " + mode);
+                                    return -1;
+                                }
+                            }
+                        }
+                )
         );
         if (Scenario.useDepth) {
             ReniSetup.GRAPHICS_CONTEXT.createDepth();

@@ -4,12 +4,8 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.util.shaderc.Shaderc;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VK13;
-import org.lwjgl.vulkan.VkDevice;
-import tfc.renirol.frontend.enums.DescriptorType;
 import tfc.renirol.frontend.enums.ImageLayout;
 import tfc.renirol.frontend.enums.Operation;
-import tfc.renirol.frontend.enums.flags.DescriptorPoolFlags;
-import tfc.renirol.frontend.enums.flags.ShaderStageFlags;
 import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
 import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
@@ -17,12 +13,7 @@ import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
 import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
 import tfc.renirol.frontend.rendering.command.shader.Shader;
-import tfc.renirol.frontend.rendering.pass.RenderPass;
 import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
-import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorLayout;
-import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorLayoutInfo;
-import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorPool;
-import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorSet;
 import tfc.renirol.frontend.reni.font.ReniFont;
 import tfc.renirol.frontend.windowing.glfw.GLFWWindow;
 import tfc.renirol.util.ShaderCompiler;
@@ -34,25 +25,23 @@ public class DrawFont {
     public static void main(String[] args) {
         ReniSetup.initialize();
 
-        final RenderPass startPass;
+        final RenderPassInfo startPass;
         {
-            RenderPassInfo info = new RenderPassInfo(ReniSetup.GRAPHICS_CONTEXT.getLogical(), ReniSetup.GRAPHICS_CONTEXT.getSurface());
-            startPass = info.colorAttachment(
+            startPass = new RenderPassInfo(ReniSetup.GRAPHICS_CONTEXT.getLogical(), ReniSetup.GRAPHICS_CONTEXT.getSurface());
+            startPass.colorAttachment(
                     Operation.CLEAR, Operation.PERFORM,
-                    ImageLayout.UNDEFINED, ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
+                    ImageLayout.COLOR_ATTACHMENT_OPTIMAL, ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
                     ReniSetup.selector
-            ).dependency().subpass().create();
-            info.destroy();
+            );
         }
-        final RenderPass pass;
+        final RenderPassInfo pass;
         {
-            RenderPassInfo info = new RenderPassInfo(ReniSetup.GRAPHICS_CONTEXT.getLogical(), ReniSetup.GRAPHICS_CONTEXT.getSurface());
-            pass = info.colorAttachment(
+            pass = new RenderPassInfo(ReniSetup.GRAPHICS_CONTEXT.getLogical(), ReniSetup.GRAPHICS_CONTEXT.getSurface());
+            pass.colorAttachment(
                     Operation.PERFORM, Operation.PERFORM,
                     ImageLayout.COLOR_ATTACHMENT_OPTIMAL, ImageLayout.PRESENT,
                     ReniSetup.selector
-            ).dependency().subpass().create();
-            info.destroy();
+            );
         }
 
         final ShaderCompiler compiler = new ShaderCompiler();
@@ -79,33 +68,6 @@ public class DrawFont {
         PipelineState state = new PipelineState(ReniSetup.GRAPHICS_CONTEXT.getLogical());
         state.dynamicState(DynamicStateMasks.SCISSOR, DynamicStateMasks.VIEWPORT);
 
-        // TODO: ideally this stuff would be abstracted away more
-        final DescriptorPool pool = new DescriptorPool(
-                ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                1,
-                new DescriptorPoolFlags[0],
-                DescriptorPool.PoolInfo.of(DescriptorType.UNIFORM_BUFFER, 10)
-        );
-        DescriptorLayout layout;
-        {
-            final DescriptorLayoutInfo info = new DescriptorLayoutInfo(
-                    0, DescriptorType.COMBINED_SAMPLED_IMAGE,
-                    1, ShaderStageFlags.FRAGMENT
-            );
-
-            layout = new DescriptorLayout(
-                    ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                    0, info
-            );
-
-            info.destroy();
-        }
-        DescriptorSet set = new DescriptorSet(
-                ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                pool, layout
-        );
-        state.descriptorLayouts(layout);
-
         ReniFont font;
         TextRenderer renderer;
         {
@@ -115,9 +77,10 @@ public class DrawFont {
             renderer = new TextRenderer(
                     ReniSetup.GRAPHICS_CONTEXT.getLogical(), font,
                     1024, 1024
-//                    128, 128
+//                    256, 256
             );
             font.setPixelSizes(0, 64);
+            state.descriptorLayouts(renderer.getLayout());
 
             try {
                 is.close();
@@ -136,7 +99,7 @@ public class DrawFont {
 
         renderer.bind(state);
         state.constantBuffer(VK13.VK_SHADER_STAGE_VERTEX_BIT, 4);
-        GraphicsPipeline pipeline0 = new GraphicsPipeline(state, pass, VERT, FRAG);
+        GraphicsPipeline pipeline0 = new GraphicsPipeline(pass, state, VERT, FRAG);
 
         try {
             ReniSetup.WINDOW.grabContext();
@@ -145,11 +108,9 @@ public class DrawFont {
                     ReniQueueType.GRAPHICS, true,
                     false
             ).setName("Main Command Buffer");
-            buffer.clearColor(0, 0, 0, 1);
 
             while (!ReniSetup.WINDOW.shouldClose()) {
                 ReniSetup.GRAPHICS_CONTEXT.prepareFrame(ReniSetup.WINDOW);
-                long fbo = ReniSetup.GRAPHICS_CONTEXT.getFrameHandle(pass);
 
                 buffer.begin();
                 buffer.transition(
@@ -161,7 +122,9 @@ public class DrawFont {
                 );
 
                 buffer.startLabel("Main Pass", 0.5f, 0, 0, 0.5f);
-                buffer.beginPass(startPass, fbo, ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
+                buffer.clearColor(0, 0, 0, 1);
+                buffer.beginPass(startPass, ReniSetup.GRAPHICS_CONTEXT.getChainBuffer(), ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
+                buffer.noClear();
 
                 buffer.bindPipe(pipeline0);
                 buffer.viewportScissor(
@@ -172,11 +135,18 @@ public class DrawFont {
                 );
                 buffer.startLabel("Draw Text", 0, 0.5f, 0, 0.5f);
                 renderer.draw(() -> {
-                    buffer.beginPass(pass, fbo, ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
-                }, "Hello, how are you doing today! \"←\"\nHi!! I am a second ililelne\nDon't worry about the illusion\nI can draw infinite lines of font (not really)\neeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\n\nThis text is using 13600 bytes to tell the GPU what\nto draw.", buffer, pipeline0, set);
+                    buffer.beginPass(pass, ReniSetup.GRAPHICS_CONTEXT.getChainBuffer(), ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
+                }, "Hello, how are you doing today! \"←\"\nHi!! I am a second ililelne\nDon't worry about the illusion\nI can draw infinite lines of font (not really)\neeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\n\nThis text is using 13600 bytes to tell the GPU what\nto draw.", buffer, pipeline0);
                 buffer.endLabel();
                 buffer.endPass();
                 buffer.endLabel();
+//                buffer.transition(
+//                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
+//                        StageMask.DRAW,
+//                        StageMask.TRANSFER,
+//                        ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
+//                        ImageLayout.PRESENT
+//                );
                 buffer.end();
 
                 ReniSetup.GRAPHICS_CONTEXT.submitFrame(buffer);
@@ -186,8 +156,6 @@ public class DrawFont {
                 GLFWWindow.poll();
 
                 ReniSetup.GRAPHICS_CONTEXT.getLogical().waitForIdle();
-
-                VK13.nvkDestroyFramebuffer(ReniSetup.GRAPHICS_CONTEXT.getLogical().getDirect(VkDevice.class), fbo, 0);
             }
             buffer.destroy();
         } catch (Throwable err) {
@@ -195,8 +163,6 @@ public class DrawFont {
         }
 
         renderer.destroy();
-        layout.destroy();
-        pool.destroy();
         ReniSetup.GRAPHICS_CONTEXT.getLogical().waitForIdle();
         FRAG.destroy();
         VERT.destroy();
