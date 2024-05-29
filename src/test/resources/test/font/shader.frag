@@ -52,7 +52,7 @@ vec4 applyKernel(sampler2D tex, vec2 texCoords) {
     }
     colorSum /= sum;
     return colorSum;
-    //    return texture(tex, texCoords);
+//    return texture(tex, texCoords);
 }
 
 float px(float distance) {

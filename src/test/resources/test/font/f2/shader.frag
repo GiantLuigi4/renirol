@@ -78,7 +78,7 @@ void main() {
     float l = px(left);
     float c = px(center);
     float r = px(right);
-    //    c = max(l, max(c, r));
+//    c = max(l, max(c, r));
 
     vec4 res = vec4(1);
     res[subpixel.r] = l;
@@ -86,8 +86,8 @@ void main() {
     res[subpixel.b] = r;
 
     res.a = max(res.x, max(res.y, res.z));
-    //    res.xyz += c * 1;
-    //    res.xyz /= 2.;
+//    res.xyz += c * 1;
+//    res.xyz /= 2.;
 
     outColor = res;
 
