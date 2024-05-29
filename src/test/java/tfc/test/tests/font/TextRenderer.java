@@ -11,6 +11,8 @@ import tfc.renirol.frontend.enums.flags.AdvanceRate;
 import tfc.renirol.frontend.enums.flags.DescriptorPoolFlags;
 import tfc.renirol.frontend.enums.flags.ShaderStageFlags;
 import tfc.renirol.frontend.enums.format.AttributeFormat;
+import tfc.renirol.frontend.enums.masks.AccessMask;
+import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.enums.modes.image.FilterMode;
 import tfc.renirol.frontend.enums.modes.image.MipmapMode;
 import tfc.renirol.frontend.enums.modes.image.WrapMode;
@@ -162,8 +164,18 @@ public class TextRenderer implements ReniDestructable {
             int count = v.limit() / MEMORY_FOOTPRINT;
             cmd.endPass();
 
-            k.set.bind(0, 0, DescriptorType.SAMPLED_IMAGE, k.info);
+            k.set.bind(0, 0, DescriptorType.COMBINED_SAMPLED_IMAGE, k.info);
+            cmd.bufferBarrier(
+                    draw,
+                    StageMask.GRAPHICS, StageMask.TRANSFER,
+                    AccessMask.SHADER_READ, AccessMask.TRANSFER_WRITE
+            );
             cmd.bufferData(draw, 0, v.limit(), v.position(0));
+            cmd.bufferBarrier(
+                    draw,
+                    StageMask.TRANSFER, StageMask.GRAPHICS,
+                    AccessMask.TRANSFER_WRITE, AccessMask.SHADER_READ
+            );
             cmd.bindDescriptor(BindPoint.GRAPHICS, pipeline0, k.set);
 
             startPass.run();

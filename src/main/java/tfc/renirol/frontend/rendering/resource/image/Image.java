@@ -5,6 +5,7 @@ import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.enums.ImageLayout;
 import tfc.renirol.frontend.enums.flags.SwapchainUsage;
+import tfc.renirol.frontend.enums.masks.AccessMask;
 import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.enums.modes.image.FilterMode;
 import tfc.renirol.frontend.enums.modes.image.MipmapMode;
@@ -123,21 +124,26 @@ public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image>
         switch (usage) {
             case COLOR -> {
                 cmd.transition(
-                        handle, StageMask.TOP_OF_PIPE, StageMask.TOP_OF_PIPE,
-                        ImageLayout.UNDEFINED, ImageLayout.COLOR_ATTACHMENT_OPTIMAL
+                        handle,
+                        StageMask.TOP_OF_PIPE, StageMask.TOP_OF_PIPE,
+                        ImageLayout.UNDEFINED, ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
+                        AccessMask.NONE, AccessMask.COLOR_READ
                 );
             }
             case DEPTH -> {
                 cmd.transition(
                         handle,
                         usage,
-                        StageMask.TOP_OF_PIPE, StageMask.EARLY_FRAGMENT_TEST,
+                        StageMask.TOP_OF_PIPE, StageMask.FRAGMENT_TEST,
                         ImageLayout.UNDEFINED, ImageLayout.DEPTH_STENCIL_ATTACHMENT_OPTIMAL
                 );
             }
         }
         cmd.end();
-        cmd.submit(logical.getStandardQueue(ReniQueueType.GRAPHICS));
+        cmd.submit(
+                logical.getStandardQueue(ReniQueueType.GRAPHICS),
+                StageMask.COLOR_ATTACHMENT_OUTPUT
+        );
         logical.waitForIdle();
         cmd.destroy();
     }

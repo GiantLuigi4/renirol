@@ -11,6 +11,7 @@ import tfc.renirol.frontend.enums.format.AttributeFormat;
 import tfc.renirol.frontend.enums.format.BitDepth;
 import tfc.renirol.frontend.enums.format.TextureChannels;
 import tfc.renirol.frontend.enums.format.TextureFormat;
+import tfc.renirol.frontend.enums.masks.AccessMask;
 import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
 import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.enums.modes.image.FilterMode;
@@ -188,12 +189,15 @@ public class Textures {
                 ReniSetup.GRAPHICS_CONTEXT.prepareFrame(ReniSetup.WINDOW);
 
                 buffer.begin();
+
                 buffer.transition(
                         ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
                         StageMask.TOP_OF_PIPE,
-                        StageMask.DRAW,
+                        StageMask.COLOR_ATTACHMENT_OUTPUT,
                         ImageLayout.UNDEFINED,
-                        ImageLayout.COLOR_ATTACHMENT_OPTIMAL
+                        ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
+                        AccessMask.NONE,
+                        AccessMask.COLOR_WRITE
                 );
 
                 buffer.startLabel("Main Pass", 0.5f, 0, 0, 0.5f);
@@ -216,6 +220,17 @@ public class Textures {
                 );
                 buffer.endPass();
                 buffer.endLabel();
+
+                buffer.transition(
+                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
+                        StageMask.COLOR_ATTACHMENT_OUTPUT,
+                        StageMask.BOTTOM_OF_PIPE,
+                        ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
+                        ImageLayout.PRESENT,
+                        AccessMask.COLOR_WRITE,
+                        AccessMask.NONE
+                );
+
                 buffer.end();
 
                 ReniSetup.GRAPHICS_CONTEXT.submitFrame(buffer);

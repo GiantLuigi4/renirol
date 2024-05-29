@@ -8,6 +8,9 @@ import tfc.renirol.frontend.enums.BufferUsage;
 import tfc.renirol.frontend.enums.ImageLayout;
 import tfc.renirol.frontend.enums.Operation;
 import tfc.renirol.frontend.enums.format.AttributeFormat;
+import tfc.renirol.frontend.enums.masks.AccessMask;
+import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
+import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
@@ -63,7 +66,7 @@ public class VBOs {
         );
 
         PipelineState state = new PipelineState(ReniSetup.GRAPHICS_CONTEXT.getLogical());
-        state.dynamicState();
+        state.dynamicState(DynamicStateMasks.SCISSOR, DynamicStateMasks.VIEWPORT);
 
         DataFormat format = VertexFormats.POS4_COLOR4;
 
@@ -125,6 +128,16 @@ public class VBOs {
 
                 buffer.begin();
 
+                buffer.transition(
+                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
+                        StageMask.TOP_OF_PIPE,
+                        StageMask.COLOR_ATTACHMENT_OUTPUT,
+                        ImageLayout.UNDEFINED,
+                        ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
+                        AccessMask.NONE,
+                        AccessMask.COLOR_WRITE
+                );
+
                 buffer.startLabel("Main Pass", 0.5f, 0, 0, 0.5f);
                 buffer.beginPass(pass, ReniSetup.GRAPHICS_CONTEXT.getChainBuffer(), ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
 
@@ -139,6 +152,17 @@ public class VBOs {
                 buffer.draw(0, 6);
                 buffer.endPass();
                 buffer.endLabel();
+
+                buffer.transition(
+                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
+                        StageMask.COLOR_ATTACHMENT_OUTPUT,
+                        StageMask.BOTTOM_OF_PIPE,
+                        ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
+                        ImageLayout.PRESENT,
+                        AccessMask.COLOR_WRITE,
+                        AccessMask.NONE
+                );
+
                 buffer.end();
 
                 ReniSetup.GRAPHICS_CONTEXT.submitFrame(buffer);

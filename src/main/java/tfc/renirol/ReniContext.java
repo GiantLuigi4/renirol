@@ -284,8 +284,9 @@ public class ReniContext implements ReniDestructable {
     public void submitFrame(CommandBuffer buffer) {
         buffer.submit(
                 getLogical().getStandardQueue(ReniQueueType.GRAPHICS),
-                VK13.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-//                VK13.VK_PIPELINE_STAGE_NONE,
+                // TODO: look at later
+                // https://themaister.net/blog/2019/08/14/yet-another-blog-explaining-vulkan-synchronization/
+                VK13.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                 getFenceImage().handle,
                 getSemaphoreImage().handle,
                 getSemaphorePresentation().handle

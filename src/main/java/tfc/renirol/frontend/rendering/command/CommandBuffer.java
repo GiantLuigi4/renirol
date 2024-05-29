@@ -9,6 +9,7 @@ import tfc.renirol.frontend.enums.ImageLayout;
 import tfc.renirol.frontend.enums.IndexSize;
 import tfc.renirol.frontend.enums.flags.ShaderStageFlags;
 import tfc.renirol.frontend.enums.flags.SwapchainUsage;
+import tfc.renirol.frontend.enums.masks.AccessMask;
 import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.enums.modes.CompareOp;
 import tfc.renirol.frontend.enums.modes.CullMode;
@@ -262,7 +263,8 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
         VkUtil.check(nvkQueueSubmit(queue.getDirect(VkQueue.class), 1, submitInfo.address(), fence));
     }
 
-    public void submit(ReniQueue queue) {
+    public void submit(ReniQueue queue, StageMask targetStage) {
+        dstStage.put(0, targetStage.value);
         VkSubmitInfo info = VkSubmitInfo.calloc();
         info.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
         info.pCommandBuffers(theBufferOfMyself);
@@ -372,6 +374,67 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
         barrier.subresourceRange().layerCount(1);
         barrier.srcAccessMask(0); // TODO
         barrier.dstAccessMask(0); // TODO
+        VK13.vkCmdPipelineBarrier(
+                cmd,
+                oldStage.value, newStage.value,
+                0,
+                null, null,
+                barrier
+        );
+        barrier.free();
+    }
+
+    public void transition(
+            long image,
+            StageMask oldStage, StageMask newStage,
+            ImageLayout oldLayout, ImageLayout newLayout,
+            AccessMask oldAccess, AccessMask newAccess
+    ) {
+        VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1);
+        barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+        barrier.oldLayout(oldLayout.value);
+        barrier.newLayout(newLayout.value);
+        barrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+        barrier.dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+        barrier.srcAccessMask(oldAccess.value);
+        barrier.dstAccessMask(newAccess.value);
+        barrier.image(image);
+        barrier.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+        barrier.subresourceRange().baseMipLevel(0);
+        barrier.subresourceRange().levelCount(1);
+        barrier.subresourceRange().baseArrayLayer(0);
+        barrier.subresourceRange().layerCount(1);
+        VK13.vkCmdPipelineBarrier(
+                cmd,
+                oldStage.value, newStage.value,
+                0,
+                null, null,
+                barrier
+        );
+        barrier.free();
+    }
+
+    public void transition(
+            long image,
+            StageMask oldStage, StageMask newStage,
+            ImageLayout oldLayout, ImageLayout newLayout,
+            AccessMask oldAccess, AccessMask newAccess,
+            SwapchainUsage usage
+    ) {
+        VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1);
+        barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+        barrier.oldLayout(oldLayout.value);
+        barrier.newLayout(newLayout.value);
+        barrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+        barrier.dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+        barrier.srcAccessMask(oldAccess.value);
+        barrier.dstAccessMask(newAccess.value);
+        barrier.image(image);
+        barrier.subresourceRange().aspectMask(usage.aspect);
+        barrier.subresourceRange().baseMipLevel(0);
+        barrier.subresourceRange().levelCount(1);
+        barrier.subresourceRange().baseArrayLayer(0);
+        barrier.subresourceRange().layerCount(1);
         VK13.vkCmdPipelineBarrier(
                 cmd,
                 oldStage.value, newStage.value,
@@ -536,6 +599,29 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
                 cmd, buffer.getHandle(),
                 start, amount, MemoryUtil.memAddress(data)
         );
+    }
+
+    public void bufferBarrier(
+            GPUBuffer buffer,
+            StageMask oldStage, StageMask newStage,
+            AccessMask srcAccess, AccessMask dstAccess
+    ) {
+        VkBufferMemoryBarrier.Buffer barrier = VkBufferMemoryBarrier.calloc(1);
+        barrier.sType$Default();
+        barrier.buffer(buffer.getHandle());
+        barrier.size(buffer.getSize());
+        barrier.srcAccessMask(srcAccess.value);
+        barrier.dstAccessMask(dstAccess.value);
+
+        VK13.vkCmdPipelineBarrier(
+                cmd,
+                oldStage.value, newStage.value,
+                0,
+                null, barrier,
+                null
+        );
+
+        barrier.free();
     }
 
     @Override

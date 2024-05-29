@@ -9,6 +9,7 @@ import tfc.renirol.frontend.enums.ImageLayout;
 import tfc.renirol.frontend.enums.format.BitDepth;
 import tfc.renirol.frontend.enums.format.TextureChannels;
 import tfc.renirol.frontend.enums.format.TextureFormat;
+import tfc.renirol.frontend.enums.masks.AccessMask;
 import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.enums.modes.image.FilterMode;
 import tfc.renirol.frontend.enums.modes.image.MipmapMode;
@@ -163,29 +164,26 @@ public class Texture implements ReniDestructable, ImageBacked, ReniTaggable<Text
             buffer.startLabel("upload", 0, 0, 0.5f, 0.5f);
             buffer.transition(
                     handle, StageMask.TOP_OF_PIPE, StageMask.DRAW,
-                    ImageLayout.UNDEFINED, ImageLayout.TRANSFER_DST_OPTIMAL
+                    ImageLayout.UNDEFINED, ImageLayout.TRANSFER_DST_OPTIMAL,
+                    AccessMask.NONE, AccessMask.TRANSFER_WRITE
             );
-//            buffer.end();
-//            buffer.submit(device.getStandardQueue(ReniQueueType.GRAPHICS));
-//            buffer.reset();
-//            buffer.begin();
             VK13.vkCmdCopyBufferToImage(
                     buffer.getDirect(VkCommandBuffer.class),
                     data.getHandle(),
                     handle, VK13.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     inf
             );
-//            buffer.end();
-//            buffer.submit(device.getStandardQueue(ReniQueueType.GRAPHICS));
-//            buffer.reset();
-//            buffer.begin();
             buffer.transition(
-                    handle, StageMask.DRAW, StageMask.TOP_OF_PIPE,
-                    ImageLayout.TRANSFER_DST_OPTIMAL, layout == null ? ImageLayout.SHADER_READONLY : layout
+                    handle, StageMask.DRAW, StageMask.GRAPHICS, // TODO: more optimal stage?
+                    ImageLayout.TRANSFER_DST_OPTIMAL, layout == null ? ImageLayout.SHADER_READONLY : layout,
+                    AccessMask.TRANSFER_WRITE, AccessMask.COLOR_READ
             );
             buffer.endLabel();
             buffer.end();
-            buffer.submit(device.getStandardQueue(ReniQueueType.GRAPHICS));
+            buffer.submit(
+                    device.getStandardQueue(ReniQueueType.GRAPHICS),
+                    StageMask.COLOR_ATTACHMENT_OUTPUT
+            );
 
             extent2D.free();
             inf.free();

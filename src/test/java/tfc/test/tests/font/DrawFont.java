@@ -6,6 +6,7 @@ import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VK13;
 import tfc.renirol.frontend.enums.ImageLayout;
 import tfc.renirol.frontend.enums.Operation;
+import tfc.renirol.frontend.enums.masks.AccessMask;
 import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
 import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
@@ -76,8 +77,8 @@ public class DrawFont {
             font = new ReniFont(is);
             renderer = new TextRenderer(
                     ReniSetup.GRAPHICS_CONTEXT.getLogical(), font,
-                    1024, 1024
-//                    256, 256
+//                    1024, 1024
+                    64, 79
             );
             font.setPixelSizes(0, 64);
             state.descriptorLayouts(renderer.getLayout());
@@ -113,12 +114,15 @@ public class DrawFont {
                 ReniSetup.GRAPHICS_CONTEXT.prepareFrame(ReniSetup.WINDOW);
 
                 buffer.begin();
+
                 buffer.transition(
                         ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
                         StageMask.TOP_OF_PIPE,
-                        StageMask.DRAW,
+                        StageMask.COLOR_ATTACHMENT_OUTPUT,
                         ImageLayout.UNDEFINED,
-                        ImageLayout.COLOR_ATTACHMENT_OPTIMAL
+                        ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
+                        AccessMask.NONE,
+                        AccessMask.COLOR_WRITE
                 );
 
                 buffer.startLabel("Main Pass", 0.5f, 0, 0, 0.5f);
@@ -140,13 +144,17 @@ public class DrawFont {
                 buffer.endLabel();
                 buffer.endPass();
                 buffer.endLabel();
-//                buffer.transition(
-//                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
-//                        StageMask.DRAW,
-//                        StageMask.TRANSFER,
-//                        ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
-//                        ImageLayout.PRESENT
-//                );
+
+                buffer.transition(
+                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
+                        StageMask.COLOR_ATTACHMENT_OUTPUT,
+                        StageMask.BOTTOM_OF_PIPE,
+                        ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
+                        ImageLayout.PRESENT,
+                        AccessMask.COLOR_WRITE,
+                        AccessMask.NONE
+                );
+
                 buffer.end();
 
                 ReniSetup.GRAPHICS_CONTEXT.submitFrame(buffer);

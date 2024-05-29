@@ -2,7 +2,6 @@ package tfc.test.shared;
 
 import tfc.renirol.api.DeviceFeature;
 import tfc.renirol.frontend.hardware.device.ReniHardwareDevice;
-import tfc.renirol.frontend.rendering.framebuffer.SwapChain;
 
 import java.util.ArrayList;
 
@@ -14,6 +13,7 @@ public class Scenario {
 
     public static ReniHardwareDevice.LogicalDeviceBuilder configureDevice(ReniHardwareDevice.LogicalDeviceBuilder logicalDeviceBuilder) {
         FEATURES.forEach(logicalDeviceBuilder::with);
+
         return logicalDeviceBuilder;
     }
 }

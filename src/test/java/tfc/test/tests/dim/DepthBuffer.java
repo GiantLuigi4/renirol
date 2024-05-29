@@ -7,11 +7,14 @@ import org.lwjgl.vulkan.VK10;
 import tfc.renirol.frontend.enums.*;
 import tfc.renirol.frontend.enums.flags.DescriptorPoolFlags;
 import tfc.renirol.frontend.enums.flags.ShaderStageFlags;
+import tfc.renirol.frontend.enums.flags.SwapchainUsage;
 import tfc.renirol.frontend.enums.format.AttributeFormat;
 import tfc.renirol.frontend.enums.format.BitDepth;
 import tfc.renirol.frontend.enums.format.TextureChannels;
 import tfc.renirol.frontend.enums.format.TextureFormat;
+import tfc.renirol.frontend.enums.masks.AccessMask;
 import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
+import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.enums.modes.image.FilterMode;
 import tfc.renirol.frontend.enums.modes.image.MipmapMode;
 import tfc.renirol.frontend.enums.modes.image.WrapMode;
@@ -48,11 +51,11 @@ public class DepthBuffer {
             pass = new RenderPassInfo(ReniSetup.GRAPHICS_CONTEXT.getLogical(), ReniSetup.GRAPHICS_CONTEXT.getSurface());
             pass.colorAttachment(
                     Operation.CLEAR, Operation.NONE,
-                    ImageLayout.UNDEFINED, ImageLayout.PRESENT,
+                    ImageLayout.COLOR_ATTACHMENT_OPTIMAL, ImageLayout.PRESENT,
                     ReniSetup.selector
             ).depthAttachment(
                     Operation.CLEAR, Operation.NONE,
-                    ImageLayout.UNDEFINED, ImageLayout.DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                    ImageLayout.DEPTH_STENCIL_ATTACHMENT_OPTIMAL, ImageLayout.UNDEFINED,
                     ReniSetup.DEPTH_FORMAT
             );
         }
@@ -211,6 +214,26 @@ public class DepthBuffer {
 
                 buffer.begin();
 
+                buffer.transition(
+                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
+                        StageMask.TOP_OF_PIPE,
+                        StageMask.COLOR_ATTACHMENT_OUTPUT,
+                        ImageLayout.UNDEFINED,
+                        ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
+                        AccessMask.NONE,
+                        AccessMask.COLOR_WRITE
+                );
+                buffer.transition(
+                        ReniSetup.GRAPHICS_CONTEXT.depthBuffer().getHandle(),
+                        StageMask.TOP_OF_PIPE,
+                        StageMask.FRAGMENT_TEST,
+                        ImageLayout.UNDEFINED,
+                        ImageLayout.DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                        AccessMask.NONE,
+                        AccessMask.DEPTH_WRITE,
+                        SwapchainUsage.DEPTH
+                );
+
                 buffer.startLabel("Main Pass", 0.5f, 0, 0, 0.5f);
                 buffer.beginPass(pass, ReniSetup.GRAPHICS_CONTEXT.getChainBuffer(), ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
 
@@ -231,14 +254,17 @@ public class DepthBuffer {
                 );
                 buffer.endPass();
                 buffer.endLabel();
-                // TODO: setup access flags
-//                buffer.transition(
-//                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
-//                        StageMask.TOP_OF_PIPE,
-//                        StageMask.TRANSFER,
-//                        ImageLayout.PRESENT,
-//                        ImageLayout.PRESENT
-//                );
+
+                buffer.transition(
+                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
+                        StageMask.COLOR_ATTACHMENT_OUTPUT,
+                        StageMask.BOTTOM_OF_PIPE,
+                        ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
+                        ImageLayout.PRESENT,
+                        AccessMask.COLOR_WRITE,
+                        AccessMask.NONE
+                );
+
                 buffer.end();
 
                 ReniSetup.GRAPHICS_CONTEXT.submitFrame(buffer);

@@ -53,7 +53,7 @@ vec4 applyKernel(sampler2D tex, vec2 texCoords) {
 }
 
 float px(float distance) {
-    float width = 0.5;
+    float width = 0.2;
     float edge = 0.05;
     float alpha = smoothstep(width, width + edge, distance);
     //    width += 0.15;

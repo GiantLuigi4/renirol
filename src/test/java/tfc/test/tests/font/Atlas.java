@@ -6,6 +6,7 @@ import tfc.renirol.frontend.enums.ImageLayout;
 import tfc.renirol.frontend.enums.flags.SwapchainUsage;
 import tfc.renirol.frontend.enums.format.BitDepth;
 import tfc.renirol.frontend.enums.format.TextureChannels;
+import tfc.renirol.frontend.enums.masks.AccessMask;
 import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.enums.modes.image.FilterMode;
 import tfc.renirol.frontend.enums.modes.image.MipmapMode;
@@ -71,6 +72,17 @@ public class Atlas {
                 logicalDevice, ReniQueueType.GRAPHICS,
                 true, false
         ).setName("Atlas Merge Commands");
+
+        buffer.begin();
+        buffer.transition(
+                img.getHandle(),
+                StageMask.TOP_OF_PIPE, StageMask.GRAPHICS,
+                ImageLayout.UNDEFINED, ImageLayout.SHADER_READONLY,
+                AccessMask.NONE, AccessMask.SHADER_READ
+        );
+        buffer.end();
+        buffer.submit(logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS), StageMask.COLOR_ATTACHMENT_OUTPUT);
+
         this.logicalDevice = logicalDevice;
     }
 
@@ -189,18 +201,24 @@ public class Atlas {
     public void beginModifications() {
         buffer.begin();
         buffer.transition(
-                img.getHandle(), StageMask.TOP_OF_PIPE, StageMask.DRAW,
-                ImageLayout.COLOR_ATTACHMENT_OPTIMAL, ImageLayout.TRANSFER_DST_OPTIMAL
+                img.getHandle(), StageMask.TOP_OF_PIPE, StageMask.COLOR_ATTACHMENT_OUTPUT,
+                ImageLayout.SHADER_READONLY, ImageLayout.TRANSFER_DST_OPTIMAL,
+                AccessMask.SHADER_READ, AccessMask.TRANSFER_WRITE
         );
     }
 
     public void submit() {
         buffer.transition(
-                img.getHandle(), StageMask.DRAW, StageMask.TOP_OF_PIPE,
-                ImageLayout.TRANSFER_DST_OPTIMAL, ImageLayout.SHADER_READONLY
+                img.getHandle(),
+                StageMask.COLOR_ATTACHMENT_OUTPUT, StageMask.GRAPHICS,
+                ImageLayout.TRANSFER_DST_OPTIMAL, ImageLayout.SHADER_READONLY,
+                AccessMask.TRANSFER_WRITE, AccessMask.SHADER_READ
         );
         buffer.end();
-        buffer.submit(logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS));
+        buffer.submit(
+                logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS),
+                StageMask.COLOR_ATTACHMENT_OUTPUT
+        );
         logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS).await();
         rs.forEach(Runnable::run);
         rs.clear();
