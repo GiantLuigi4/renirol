@@ -128,10 +128,10 @@ public class LoadSingle {
         ibo.upload(0, indices);
         MemoryUtil.memFree(indices);
 
-        InputStream is = LoadSingle.class.getClassLoader().getResourceAsStream("test/font/help.ttf");
+        InputStream is = LoadSingle.class.getClassLoader().getResourceAsStream("test/font/font.ttf");
         ReniFont font = new ReniFont(is);
         font.setPixelSizes(0, 64);
-        ReniGlyph glyph = font.glyph('4', FreeType.FT_LOAD_DEFAULT);
+        ReniGlyph glyph = font.glyph('a', FreeType.FT_LOAD_DEFAULT);
         Texture texture = new Texture(
                 ReniSetup.GRAPHICS_CONTEXT.getLogical(),
                 glyph.width, glyph.height, TextureChannels.R,
@@ -140,8 +140,8 @@ public class LoadSingle {
         TextureSampler sampler = texture.createSampler(
                 WrapMode.BORDER,
                 WrapMode.BORDER,
-                FilterMode.NEAREST,
-                FilterMode.NEAREST,
+                FilterMode.LINEAR,
+                FilterMode.LINEAR,
                 MipmapMode.NEAREST,
                 true, 16f,
                 0f, 0f, 0f

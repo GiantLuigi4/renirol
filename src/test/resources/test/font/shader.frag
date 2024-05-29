@@ -1,7 +1,7 @@
 #version 450
 #extension GL_ARB_separate_shader_objects: enable
 
-layout (location = 0) in vec4 fragColor;
+layout (location = 0) in vec2 inUV;
 
 layout (location = 0) out vec4 outColor;
 
@@ -30,11 +30,13 @@ float sampleFont(sampler2D tex, vec2 texCoord) {
     return texel;
 }
 
+//@formatter:off
 float kernel[9] = {
-0.111, 0.111, 0.111,
-0.111, 0.111, 0.111,
-0.111, 0.111, 0.111
+    0.111, 0.111, 0.111,
+    0.111, 0.111, 0.111,
+    0.111, 0.111, 0.111
 };
+//@formatter:on
 vec4 applyKernel(sampler2D tex, vec2 texCoords) {
     vec2 texSize = textureSize(tex, 0);
     vec2 onePixel = vec2(1.0) / texSize;
@@ -50,11 +52,12 @@ vec4 applyKernel(sampler2D tex, vec2 texCoords) {
     }
     colorSum /= sum;
     return colorSum;
+    //    return texture(tex, texCoords);
 }
 
 float px(float distance) {
-    float width = 0.2;
-    float edge = 0.05;
+    float width = 0.1;
+    float edge = 0.3;
     float alpha = smoothstep(width, width + edge, distance);
 //    width += 0.15;
 //    alpha = min(alpha, smoothstep(width, width - edge, distance));
@@ -65,9 +68,9 @@ void main() {
     vec2 ts = textureSize(texSampler, 0);
     ts = (1. / ts);
 
-    float left = applyKernel(texSampler, fragColor.xy - vec2(ts.x / 3., 0)).x;
-    float center = applyKernel(texSampler, fragColor.xy).x;
-    float right = applyKernel(texSampler, fragColor.xy + vec2(ts.x / 3., 0)).x;
+    float left = applyKernel(texSampler, inUV.xy - vec2(ts.x / 1., 0)).x;
+    float center = applyKernel(texSampler, inUV.xy).x;
+    float right = applyKernel(texSampler, inUV.xy + vec2(ts.x / 1., 0)).x;
 
     ivec3 subpixel = ivec3(0, 1, 2);
 
@@ -75,10 +78,18 @@ void main() {
     float l = px(left);
     float c = px(center);
     float r = px(right);
+//    c = max(l, max(c, r));
 
     vec4 res = vec4(1);
     res[subpixel.r] = l;
     res[subpixel.g] = c;
     res[subpixel.b] = r;
+
+    res.a = max(res.x, max(res.y, res.z));
+//    res.xyz += c * 1;
+//    res.xyz /= 2.;
+
     outColor = res;
+
+    if (res.a == 0) discard;
 }

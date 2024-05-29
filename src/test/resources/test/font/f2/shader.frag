@@ -30,11 +30,13 @@ float sampleFont(sampler2D tex, vec2 texCoord) {
     return texel;
 }
 
+//@formatter:off
 float kernel[9] = {
-0.111, 0.111, 0.111,
-0.111, 0.111, 0.111,
-0.111, 0.111, 0.111
+    0.111, 0.111, 0.111,
+    0.111, 0.111, 0.111,
+    0.111, 0.111, 0.111
 };
+//@formatter:on
 vec4 applyKernel(sampler2D tex, vec2 texCoords) {
     vec2 texSize = textureSize(tex, 0);
     vec2 onePixel = vec2(1.0) / texSize;
@@ -50,10 +52,11 @@ vec4 applyKernel(sampler2D tex, vec2 texCoords) {
     }
     colorSum /= sum;
     return colorSum;
+//    return texture(tex, texCoords);
 }
 
 float px(float distance) {
-    float width = 0.15;
+    float width = 0.1;
     float edge = 0.3;
     float alpha = smoothstep(width, width + edge, distance);
     //    width += 0.15;
@@ -75,7 +78,7 @@ void main() {
     float l = px(left);
     float c = px(center);
     float r = px(right);
-//    c = max(l, max(c, r));
+    //    c = max(l, max(c, r));
 
     vec4 res = vec4(1);
     res[subpixel.r] = l;
@@ -83,8 +86,8 @@ void main() {
     res[subpixel.b] = r;
 
     res.a = max(res.x, max(res.y, res.z));
-    res.xyz += c * 1;
-    res.xyz /= 2.;
+    //    res.xyz += c * 1;
+    //    res.xyz /= 2.;
 
     outColor = res;
 
