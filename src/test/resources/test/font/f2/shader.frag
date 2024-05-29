@@ -53,8 +53,8 @@ vec4 applyKernel(sampler2D tex, vec2 texCoords) {
 }
 
 float px(float distance) {
-    float width = 0.2;
-    float edge = 0.05;
+    float width = 0.15;
+    float edge = 0.3;
     float alpha = smoothstep(width, width + edge, distance);
     //    width += 0.15;
     //    alpha = min(alpha, smoothstep(width, width - edge, distance));
@@ -69,23 +69,21 @@ void main() {
     float center = applyKernel(texSampler, inUV.xy).x;
     float right = applyKernel(texSampler, inUV.xy + vec2(ts.x / 1., 0)).x;
 
-//    vec4 res = vec4(px(center));
-
     ivec3 subpixel = ivec3(0, 1, 2);
 
     float distance = outColor.r;
     float l = px(left);
     float c = px(center);
     float r = px(right);
+//    c = max(l, max(c, r));
 
     vec4 res = vec4(1);
-    res[subpixel.r] = r;
+    res[subpixel.r] = l;
     res[subpixel.g] = c;
-    res[subpixel.b] = l;
+    res[subpixel.b] = r;
 
     res.a = max(res.x, max(res.y, res.z));
-//    res.xyz /= res.a;
-    res.xyz += center;
+    res.xyz += c * 1;
     res.xyz /= 2.;
 
     outColor = res;

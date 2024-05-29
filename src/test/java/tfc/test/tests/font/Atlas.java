@@ -201,7 +201,7 @@ public class Atlas {
     public void beginModifications() {
         buffer.begin();
         buffer.transition(
-                img.getHandle(), StageMask.TOP_OF_PIPE, StageMask.COLOR_ATTACHMENT_OUTPUT,
+                img.getHandle(), StageMask.GRAPHICS, StageMask.COLOR_ATTACHMENT_OUTPUT,
                 ImageLayout.SHADER_READONLY, ImageLayout.TRANSFER_DST_OPTIMAL,
                 AccessMask.SHADER_READ, AccessMask.TRANSFER_WRITE
         );

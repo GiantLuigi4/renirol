@@ -77,8 +77,8 @@ public class DrawFont {
             font = new ReniFont(is);
             renderer = new TextRenderer(
                     ReniSetup.GRAPHICS_CONTEXT.getLogical(), font,
-//                    1024, 1024
-                    64, 79
+                    1024, 1024
+//                    64, 79 // minimum usable without the program crashing with jetbrains mono regular
             );
             font.setPixelSizes(0, 64);
             state.descriptorLayouts(renderer.getLayout());

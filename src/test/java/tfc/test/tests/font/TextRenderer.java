@@ -168,13 +168,13 @@ public class TextRenderer implements ReniDestructable {
             cmd.bufferBarrier(
                     draw,
                     StageMask.GRAPHICS, StageMask.TRANSFER,
-                    AccessMask.SHADER_READ, AccessMask.TRANSFER_WRITE
+                    AccessMask.VERTEX_READ, AccessMask.TRANSFER_WRITE
             );
             cmd.bufferData(draw, 0, v.limit(), v.position(0));
             cmd.bufferBarrier(
                     draw,
                     StageMask.TRANSFER, StageMask.GRAPHICS,
-                    AccessMask.TRANSFER_WRITE, AccessMask.SHADER_READ
+                    AccessMask.TRANSFER_WRITE, AccessMask.VERTEX_READ
             );
             cmd.bindDescriptor(BindPoint.GRAPHICS, pipeline0, k.set);
 

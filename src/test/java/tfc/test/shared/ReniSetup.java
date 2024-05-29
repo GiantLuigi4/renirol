@@ -24,7 +24,7 @@ public class ReniSetup {
     static {
         System.out.println(ProcessHandle.current().pid());
         Setup.performanceSetup();
-        if (Scenario.useRenderDoc) Setup.loadRenderdoc();
+//        if (Scenario.useRenderDoc) Setup.loadRenderdoc();
         if (!Renirol.BACKEND.equals("OpenGL"))
             Setup.noAPI();
         WINDOW = Scenario.useWinNT ? new WinNTWindow(
@@ -65,7 +65,7 @@ public class ReniSetup {
                         .require(ReniHardwareCapability.DYNAMIC_RENDERNING)
                         .reniRecommended()
                         // if any integrated GPU meets the requirements, then filter out any non-dedicated GPU
-                        .prioritizeIntegrated()
+//                        .prioritizeIntegrated()
                         // low-importance features
                         .request(100, ReniHardwareCapability.SUPPORTS_INDICES.configured(ReniQueueType.COMPUTE))
                         // microsoft seems to emulate GPUs with "Dozen" being the driver name, and these are kinda horrible at functioning
