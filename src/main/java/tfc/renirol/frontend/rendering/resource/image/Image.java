@@ -125,7 +125,7 @@ public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image>
             case COLOR -> {
                 cmd.transition(
                         handle,
-                        StageMask.TOP_OF_PIPE, StageMask.TOP_OF_PIPE,
+                        StageMask.TOP_OF_PIPE, StageMask.GRAPHICS,
                         ImageLayout.UNDEFINED, ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
                         AccessMask.NONE, AccessMask.COLOR_READ
                 );

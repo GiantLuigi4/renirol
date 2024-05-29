@@ -284,6 +284,7 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
         info.renderArea().extent(extents);
         VkRenderingAttachmentInfo.Buffer buffer1 = VkRenderingAttachmentInfo.calloc(pass.getColorAttachments().size());
         int index = 0;
+        int ridx = 0;
         VkRenderingAttachmentInfo depthInf = null;
         for (ReniPassAttachment attachment : pass.getAttachments()) {
             VkRenderingAttachmentInfo attachmentInfo;
@@ -297,19 +298,20 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
             attachmentInfo.storeOp(attachment.store.store);
 
             if (!noClear) {
-                if (attachment.isDepth) attachmentInfo.clearValue(clearValues.get(index));
-                else attachmentInfo.clearValue(clearValues.get(index));
+                if (!attachment.isDepth) attachmentInfo.clearValue(clearColor.get(0));
+                else attachmentInfo.clearValue(depthColor.get(0));
             }
 
             attachmentInfo.imageLayout(attachment.initialLayout.value);
             attachmentInfo.resolveImageLayout(attachment.targetLayout.value);
 
-            attachmentInfo.imageView(buffer.getView(index));
+            attachmentInfo.imageView(buffer.getView(ridx));
 
             if (attachment.isDepth)
                 info.pDepthAttachment(attachmentInfo);
-
-            index++;
+            else
+                index++;
+            ridx++;
         }
         info.pColorAttachments(buffer1);
         info.layerCount(1);
