@@ -5,13 +5,10 @@ import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.api.DeviceFeature;
 import tfc.renirol.backend.vk.util.VkUtil;
-import tfc.renirol.frontend.hardware.device.feature.Bindless;
 import tfc.renirol.frontend.hardware.device.support.ReniDeviceFeatures;
 import tfc.renirol.frontend.hardware.device.support.ReniDeviceInformation;
-import tfc.renirol.frontend.hardware.util.ReniHardwareCapability;
 import tfc.renirol.frontend.hardware.device.support.ReniDeviceType;
-import tfc.renirol.frontend.rendering.command.CommandBuffer;
-import tfc.renirol.util.Pair;
+import tfc.renirol.frontend.hardware.util.ReniHardwareCapability;
 import tfc.renirol.util.ReadOnlyList;
 
 import java.nio.ByteBuffer;
@@ -302,7 +299,7 @@ public class ReniHardwareDevice {
 
             ReniLogicalDevice device = VkUtil.getChecked(
                     (buf) -> VK10.nvkCreateDevice(direct, createInfo.address(), 0, buf.address()),
-                    (handle) -> new ReniLogicalDevice(indices, new VkDevice(handle, ReniHardwareDevice.this.direct, createInfo), ReniHardwareDevice.this)
+                    (handle) -> new ReniLogicalDevice(indices, new VkDevice(handle, ReniHardwareDevice.this.direct, createInfo), ReniHardwareDevice.this, new HashSet<>(ext))
             );
             for (Runnable releaseFunc : releaseFuncs) releaseFunc.run();
             return device;

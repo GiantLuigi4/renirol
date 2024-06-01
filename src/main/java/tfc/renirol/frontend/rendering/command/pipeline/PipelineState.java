@@ -4,6 +4,7 @@ import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
+import tfc.renirol.frontend.enums.modes.PrimitiveType;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
 import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorLayout;
@@ -30,10 +31,12 @@ public class PipelineState {
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = VkPipelineLayoutCreateInfo.calloc();
     VkPipelineColorBlendStateCreateInfo colorBlending = VkPipelineColorBlendStateCreateInfo.calloc();
     VkPipelineDepthStencilStateCreateInfo depthStencil = VkPipelineDepthStencilStateCreateInfo.calloc();
+    VkPipelineTessellationStateCreateInfo tessellationState = VkPipelineTessellationStateCreateInfo.calloc();
 
     public PipelineState(ReniLogicalDevice device) {
         this.device = device.getDirect(VkDevice.class);
         dynamic.sType(VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
+        tessellationState.sType$Default();
 
         // vertex input
         vertexInputInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
@@ -118,6 +121,21 @@ public class PipelineState {
         depthStencil.stencilTestEnable(false);
     }
 
+    public PipelineState setTopology(PrimitiveType type) {
+        inputAssembly.topology(type.id);
+        return this;
+    }
+
+    public PipelineState usePrimitiveRestart(boolean value) {
+        inputAssembly.primitiveRestartEnable(value);
+        return this;
+    }
+
+    public PipelineState patchControlPoints(int count) {
+        tessellationState.patchControlPoints(count);
+        return this;
+    }
+
     public PipelineState colorAttachmentCount(int count) {
         colorBlendAttachment.free();
         colorBlending.attachmentCount(count);
@@ -149,7 +167,7 @@ public class PipelineState {
         return this;
     }
 
-    public void alphaBlending(int attachment) {
+    public PipelineState alphaBlending(int attachment) {
         colorBlendAttachment.get(attachment).colorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
         colorBlendAttachment.get(attachment).blendEnable(true);
         colorBlendAttachment.get(attachment).srcColorBlendFactor(VK_BLEND_FACTOR_SRC_ALPHA);
@@ -158,9 +176,10 @@ public class PipelineState {
         colorBlendAttachment.get(attachment).srcAlphaBlendFactor(VK_BLEND_FACTOR_ONE);
         colorBlendAttachment.get(attachment).dstAlphaBlendFactor(VK_BLEND_FACTOR_ZERO);
         colorBlendAttachment.get(attachment).alphaBlendOp(VK_BLEND_OP_ADD);
+        return this;
     }
 
-    public void additiveBlending(int attachment) {
+    public PipelineState additiveBlending(int attachment) {
         colorBlendAttachment.get(attachment).colorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
         colorBlendAttachment.get(attachment).blendEnable(true);
         colorBlendAttachment.get(attachment).srcColorBlendFactor(VK_BLEND_FACTOR_ONE);
@@ -169,6 +188,7 @@ public class PipelineState {
         colorBlendAttachment.get(attachment).srcAlphaBlendFactor(VK_BLEND_FACTOR_ONE);
         colorBlendAttachment.get(attachment).dstAlphaBlendFactor(VK_BLEND_FACTOR_ZERO);
         colorBlendAttachment.get(attachment).alphaBlendOp(VK_BLEND_OP_ADD);
+        return this;
     }
 
     LongBuffer layoutDescBuffer = MemoryUtil.memAllocLong(1);
@@ -176,7 +196,7 @@ public class PipelineState {
     ArrayList<VkPushConstantRange> push_constant = new ArrayList<>();
     VkPushConstantRange.Buffer constBuf;
 
-    public void constantBuffer(int stage, int size) {
+    public PipelineState constantBuffer(int stage, int size) {
         VkPushConstantRange push_constant;
         this.push_constant.add(push_constant = VkPushConstantRange.calloc());
         push_constant.offset(0);
@@ -189,17 +209,20 @@ public class PipelineState {
             constBuf.put(i, this.push_constant.get(i));
         }
         pipelineLayoutInfo.pPushConstantRanges(constBuf);
+        return this;
     }
 
-    public void setLayoutDesc(long desc) {
+    public PipelineState setLayoutDesc(long desc) {
         layoutDescBuffer.put(0, desc);
         pipelineLayoutInfo.setLayoutCount(1);
         pipelineLayoutInfo.pSetLayouts(layoutDescBuffer);
+        return this;
     }
 
-    public void removeLayoutDesc() {
+    public PipelineState removeLayoutDesc() {
         pipelineLayoutInfo.setLayoutCount(0);
         pipelineLayoutInfo.pSetLayouts(null);
+        return this;
     }
 
     public PipelineLayout create() {
@@ -210,18 +233,19 @@ public class PipelineState {
 
     IntBuffer dynamicBuffer;
 
-    public void dynamicState(DynamicStateMasks... states) {
+    public PipelineState dynamicState(DynamicStateMasks... states) {
         if (dynamicBuffer != null) MemoryUtil.memFree(dynamicBuffer);
         dynamicBuffer = MemoryUtil.memAllocInt(states.length);
         for (int i = 0; i < states.length; i++)
             dynamicBuffer.put(i, states[i].bits);
         dynamic.pDynamicStates(dynamicBuffer);
+        return this;
     }
 
     VkVertexInputBindingDescription.Buffer bindings = VkVertexInputBindingDescription.malloc(0);
     VkVertexInputAttributeDescription.Buffer attribs = VkVertexInputAttributeDescription.malloc(0);
 
-    public void vertexInput(BufferDescriptor... vbo) {
+    public PipelineState vertexInput(BufferDescriptor... vbo) {
         MemoryUtil.memFree(bindings);
         bindings = VkVertexInputBindingDescription.malloc(vbo.length);
         int attribCount = 0;
@@ -238,11 +262,12 @@ public class PipelineState {
 
         vertexInputInfo.pVertexBindingDescriptions(bindings);
         vertexInputInfo.pVertexAttributeDescriptions(attribs);
+        return this;
     }
 
     LongBuffer setBuffer;
 
-    public void descriptorLayouts(DescriptorLayout... layouts) {
+    public PipelineState descriptorLayouts(DescriptorLayout... layouts) {
         if (setBuffer != null) MemoryUtil.memFree(setBuffer);
 
         setBuffer = MemoryUtil.memAllocLong(layouts.length);
@@ -251,16 +276,19 @@ public class PipelineState {
 
         pipelineLayoutInfo.setLayoutCount(layouts.length);
         pipelineLayoutInfo.pSetLayouts(setBuffer);
+        return this;
     }
 
-    public void viewport(float x, float y, float width, float height, float minDepth, float maxDepth) {
+    public PipelineState viewport(float x, float y, float width, float height, float minDepth, float maxDepth) {
         viewportState.pViewports().get(0).set(
                 x, y, width, height, minDepth, maxDepth
         );
+        return this;
     }
 
-    public void scissor(int x, int y, int width, int height) {
+    public PipelineState scissor(int x, int y, int width, int height) {
         viewportState.pScissors().get(0).offset().set(x, y);
         viewportState.pScissors().get(0).extent().set(width, height);
+        return this;
     }
 }

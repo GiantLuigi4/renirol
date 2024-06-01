@@ -42,6 +42,7 @@ public class GraphicsPipeline {
         pipelineInfo.pColorBlendState(layout.colorBlending);
         pipelineInfo.pDynamicState(layout.dynamic);
         pipelineInfo.pDepthStencilState(layout.depthStencil);
+        pipelineInfo.pTessellationState(layout.tessellationState);
 
         pipelineInfo.layout(this.layout.handle);
 

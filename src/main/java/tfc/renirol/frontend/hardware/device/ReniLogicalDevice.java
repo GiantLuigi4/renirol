@@ -9,6 +9,7 @@ import tfc.renirol.itf.ReniTaggable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.lwjgl.vulkan.VK10.VK_OBJECT_TYPE_DEVICE;
@@ -18,8 +19,9 @@ public class ReniLogicalDevice implements ReniTaggable<ReniLogicalDevice> {
     public final ReniHardwareDevice hardware;
     protected final HashMap<ReniQueueType, Integer> standardIndices;
     protected final HashMap<ReniQueueType, ReniQueue> queues = new HashMap<>();
+    protected final HashSet<String> enabledExt;
 
-    public ReniLogicalDevice(HashMap<ReniQueueType, Integer> standardIndices, VkDevice direct, ReniHardwareDevice hardware) {
+    public ReniLogicalDevice(HashMap<ReniQueueType, Integer> standardIndices, VkDevice direct, ReniHardwareDevice hardware, HashSet<String> enabledExt) {
         this.standardIndices = standardIndices;
         this.direct = direct;
         this.hardware = hardware;
@@ -29,6 +31,11 @@ public class ReniLogicalDevice implements ReniTaggable<ReniLogicalDevice> {
                     (handle) -> new ReniQueue(this, new VkQueue(handle, direct))
             ));
         });
+        this.enabledExt = enabledExt;
+    }
+
+    public boolean extensionEnabled(String name) {
+        return enabledExt.contains(name);
     }
 
     public ReniQueue getStandardQueue(ReniQueueType type) {
