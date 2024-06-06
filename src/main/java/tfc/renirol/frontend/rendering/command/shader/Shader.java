@@ -34,21 +34,27 @@ public class Shader {
 
         result.printLog();
 
-        VkShaderModuleCreateInfo createInfo = VkShaderModuleCreateInfo.calloc();
-        createInfo.sType(VK10.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
-        createInfo.pCode(result.getBytes());
-        module = VkUtil.getCheckedLong(
-                (buf) -> VK10.nvkCreateShaderModule(this.device, createInfo.address(), 0, MemoryUtil.memAddress(buf))
-        );
-        createInfo.free();
+        if (compiledSuccessfully()) {
+            VkShaderModuleCreateInfo createInfo = VkShaderModuleCreateInfo.calloc();
+            createInfo.sType(VK10.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
+            createInfo.pCode(result.getBytes());
+            module = VkUtil.getCheckedLong(
+                    (buf) -> VK10.nvkCreateShaderModule(this.device, createInfo.address(), 0, MemoryUtil.memAddress(buf))
+            );
+            createInfo.free();
 
-        {
-            stage = VkPipelineShaderStageCreateInfo.calloc();
-            stage.sType(VK10.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
-            stage.stage(typevk);
-            stage.module(module);
-            nameBuf = MemoryUtil.memUTF8(entry);
-            stage.pName(nameBuf);
+            {
+                stage = VkPipelineShaderStageCreateInfo.calloc();
+                stage.sType(VK10.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
+                stage.stage(typevk);
+                stage.module(module);
+                nameBuf = MemoryUtil.memUTF8(entry);
+                stage.pName(nameBuf);
+            }
+        } else {
+            stage = null;
+            nameBuf = null;
+            module = 0;
         }
 
         this.type = typevk;
@@ -69,5 +75,9 @@ public class Shader {
             result.free();
         MemoryUtil.memFree(nameBuf);
         VK10.nvkDestroyShaderModule(device, module, 0);
+    }
+
+    public boolean compiledSuccessfully() {
+        return result.isSuccess();
     }
 }

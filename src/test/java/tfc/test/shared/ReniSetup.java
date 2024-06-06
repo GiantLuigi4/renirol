@@ -9,7 +9,7 @@ import tfc.renirol.frontend.hardware.device.feature.DynamicRendering;
 import tfc.renirol.frontend.hardware.device.support.image.ReniSwapchainCapabilities;
 import tfc.renirol.frontend.hardware.util.DeviceQuery;
 import tfc.renirol.frontend.hardware.util.ReniHardwareCapability;
-import tfc.renirol.frontend.rendering.framebuffer.SwapChain;
+import tfc.renirol.frontend.rendering.framebuffer.chain.SwapChain;
 import tfc.renirol.frontend.rendering.selectors.ChannelInfo;
 import tfc.renirol.frontend.rendering.selectors.FormatSelector;
 import tfc.renirol.frontend.windowing.GenericWindow;
@@ -36,9 +36,9 @@ public class ReniSetup {
         );
 
         if (Renirol.BACKEND.equals("VULKAN")) {
-            GRAPHICS_CONTEXT.requestExtensions(
-                    EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME
-            );
+            Scenario.EXTENSIONS.add(EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+
+            GRAPHICS_CONTEXT.requestExtensions(Scenario.EXTENSIONS.toArray(new String[0]));
             GRAPHICS_CONTEXT.setFlags(0); // optional
         }
         GRAPHICS_CONTEXT.setup(WINDOW, "ReniTest", 1, 0, 0); // inits vulkan instance

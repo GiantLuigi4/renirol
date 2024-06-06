@@ -20,7 +20,7 @@ import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.rendering.ReniQueue;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
 import tfc.renirol.frontend.rendering.debug.DebugMarker;
-import tfc.renirol.frontend.rendering.framebuffer.ChainBuffer;
+import tfc.renirol.frontend.rendering.framebuffer.Framebuffer;
 import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
 import tfc.renirol.frontend.rendering.pass.ReniPassAttachment;
 import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
@@ -276,7 +276,7 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
         info.free();
     }
 
-    public void beginPass(RenderPassInfo pass, ChainBuffer buffer, VkExtent2D extents) {
+    public void beginPass(RenderPassInfo pass, Framebuffer buffer, VkExtent2D extents) {
         VkRenderingInfo info = VkRenderingInfo.calloc();
         info.sType$Default();
 

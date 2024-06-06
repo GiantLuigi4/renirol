@@ -12,10 +12,9 @@ import tfc.renirol.frontend.hardware.util.DeviceQuery;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.fencing.Fence;
 import tfc.renirol.frontend.rendering.fencing.Semaphore;
-import tfc.renirol.frontend.rendering.framebuffer.ChainBuffer;
-import tfc.renirol.frontend.rendering.framebuffer.SwapChain;
-import tfc.renirol.frontend.rendering.framebuffer.SwapchainFrameBuffer;
-import tfc.renirol.frontend.rendering.pass.RenderPass;
+import tfc.renirol.frontend.rendering.framebuffer.chain.ChainBuffer;
+import tfc.renirol.frontend.rendering.framebuffer.chain.SwapChain;
+import tfc.renirol.frontend.rendering.framebuffer.chain.SwapchainImage;
 import tfc.renirol.frontend.rendering.resource.image.Image;
 import tfc.renirol.frontend.windowing.GenericWindow;
 import tfc.renirol.itf.ReniDestructable;
@@ -295,12 +294,8 @@ public class ReniContext implements ReniDestructable {
         getFenceImage().reset();
     }
 
-    public SwapchainFrameBuffer getFramebuffer() {
+    public SwapchainImage getFramebuffer() {
         return graphicsChain.getFbo(getFrameIndex());
-    }
-
-    public long getFrameHandle(RenderPass pass) {
-        return buffer.createFbo(frame.get(0), pass);
     }
 
     public SwapChain defaultSwapchain() {

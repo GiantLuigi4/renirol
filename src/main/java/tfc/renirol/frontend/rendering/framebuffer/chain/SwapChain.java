@@ -1,4 +1,4 @@
-package tfc.renirol.frontend.rendering.framebuffer;
+package tfc.renirol.frontend.rendering.framebuffer.chain;
 
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
@@ -23,7 +23,7 @@ public class SwapChain implements ReniDestructable {
         return swapChain;
     }
 
-    List<SwapchainFrameBuffer> buffers = new ArrayList<>();
+    List<SwapchainImage> buffers = new ArrayList<>();
 
     ReniLogicalDevice device;
     long surface;
@@ -175,7 +175,7 @@ public class SwapChain implements ReniDestructable {
                 // create image view
                 viewCI.image(img);
                 VkUtil.check(VK10.nvkCreateImageView(device.getDirect(VkDevice.class), viewCI.address(), 0, addr));
-                buffers.add(new SwapchainFrameBuffer(device.getDirect(VkDevice.class), img, buf.get(0), this));
+                buffers.add(new SwapchainImage(device.getDirect(VkDevice.class), img, buf.get(0), this));
             }
 
             MemoryUtil.memFree(buffer);
@@ -192,7 +192,7 @@ public class SwapChain implements ReniDestructable {
     public void destroy() {
         if (initialized) {
             initialized = false;
-            for (SwapchainFrameBuffer buffer : buffers)
+            for (SwapchainImage buffer : buffers)
                 buffer.destroy();
             buffers.clear();
             extents.free();
@@ -227,7 +227,7 @@ public class SwapChain implements ReniDestructable {
         );
     }
 
-    public SwapchainFrameBuffer getFbo(int frameIndex) {
+    public SwapchainImage getFbo(int frameIndex) {
         return buffers.get(frameIndex);
     }
 }
