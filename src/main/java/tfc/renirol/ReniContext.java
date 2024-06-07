@@ -4,7 +4,11 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
+import tfc.renirol.frontend.enums.ImageLayout;
+import tfc.renirol.frontend.enums.Operation;
 import tfc.renirol.frontend.enums.flags.SwapchainUsage;
+import tfc.renirol.frontend.enums.masks.AccessMask;
+import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.hardware.device.ReniHardwareDevice;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
@@ -12,9 +16,11 @@ import tfc.renirol.frontend.hardware.util.DeviceQuery;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.fencing.Fence;
 import tfc.renirol.frontend.rendering.fencing.Semaphore;
+import tfc.renirol.frontend.rendering.framebuffer.Attachment;
 import tfc.renirol.frontend.rendering.framebuffer.chain.ChainBuffer;
 import tfc.renirol.frontend.rendering.framebuffer.chain.SwapChain;
 import tfc.renirol.frontend.rendering.framebuffer.chain.SwapchainImage;
+import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
 import tfc.renirol.frontend.rendering.resource.image.Image;
 import tfc.renirol.frontend.windowing.GenericWindow;
 import tfc.renirol.itf.ReniDestructable;
@@ -37,7 +43,7 @@ public class ReniContext implements ReniDestructable {
     private long surface;
     private ChainBuffer buffer;
     private SwapChain graphicsChain;
-    private List<Image> additional = new ArrayList<>();
+    private List<Attachment> additional = new ArrayList<>();
 
     public ReniContext() {
     }
@@ -135,17 +141,17 @@ public class ReniContext implements ReniDestructable {
         semaphoreB = new Semaphore(logical);
     }
 
-    int depthIdx = 0;
+    int depthIdx = -1;
 
     public void createDepth() {
-        additional.add(new Image(logical).setUsage(SwapchainUsage.DEPTH));
-        buffer = new ChainBuffer(frame, graphicsChain, additional.toArray(new Image[0]));
+        additional.add(Attachment.depth(new Image(logical).setUsage(SwapchainUsage.DEPTH)));
+        buffer = new ChainBuffer(frame, graphicsChain, additional.toArray(new Attachment[0]));
         depthIdx = additional.size() - 1;
     }
 
-    public void addBuffer(Image image) {
-        additional.add(image);
-        buffer = new ChainBuffer(frame, graphicsChain, additional.toArray(new Image[0]));
+    public void addBuffer(Image image, boolean depth) {
+        additional.add(new Attachment(image, depth, true));
+        buffer = new ChainBuffer(frame, graphicsChain, additional.toArray(new Attachment[0]));
     }
 
     public void setupOffscreen() {
@@ -303,10 +309,66 @@ public class ReniContext implements ReniDestructable {
     }
 
     public Image depthBuffer() {
-        return additional.get(depthIdx);
+        if (depthIdx == -1) throw new RuntimeException("No depth buffer present!");
+
+        return (Image) additional.get(depthIdx).image;
     }
 
     public ChainBuffer getChainBuffer() {
         return buffer;
+    }
+
+    public RenderPassInfo getPass(
+            Operation load, Operation store,
+            ImageLayout targetLayout
+    ) {
+        return buffer.genericPass(
+                logical,
+                load, store,
+                targetLayout
+        );
+    }
+
+    public void prepareChain(CommandBuffer buffer) {
+        for (Attachment attachment : this.buffer) {
+            if (attachment.isDepth) {
+                buffer.transition(
+                        attachment.image.getHandle(),
+                        StageMask.TOP_OF_PIPE,
+                        StageMask.FRAGMENT_TEST,
+                        ImageLayout.UNDEFINED,
+                        ImageLayout.DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                        AccessMask.NONE,
+                        AccessMask.DEPTH_WRITE,
+                        SwapchainUsage.DEPTH
+                );
+            } else {
+                buffer.transition(
+                        attachment.image.getHandle(),
+                        StageMask.TOP_OF_PIPE,
+                        StageMask.COLOR_ATTACHMENT_OUTPUT,
+                        ImageLayout.UNDEFINED,
+                        ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
+                        AccessMask.NONE,
+                        AccessMask.COLOR_WRITE
+                );
+            }
+        }
+    }
+
+    public void preparePresent(CommandBuffer buffer) {
+        buffer.transition(
+                getFramebuffer().image,
+                StageMask.COLOR_ATTACHMENT_OUTPUT,
+                StageMask.BOTTOM_OF_PIPE,
+                ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
+                ImageLayout.PRESENT,
+                AccessMask.COLOR_WRITE,
+                AccessMask.NONE
+        );
+    }
+
+    public <T> T getInstance(Class<T> vkInstanceClass) {
+        return (T) instance;
     }
 }

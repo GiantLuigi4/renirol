@@ -18,7 +18,7 @@ import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
-import tfc.renirol.frontend.rendering.resource.image.ImageBacked;
+import tfc.renirol.frontend.rendering.resource.image.itf.ImageBacked;
 import tfc.renirol.itf.ReniDestructable;
 import tfc.renirol.itf.ReniTaggable;
 
@@ -91,9 +91,14 @@ public class Texture implements ReniDestructable, ImageBacked, ReniTaggable<Text
 
     long memory = 0;
 
-    protected void create(ReniLogicalDevice device, ImageLayout layout) {
-        int format;
+    int format;
 
+    @Override
+    public int getFormat() {
+        return format;
+    }
+
+    protected void create(ReniLogicalDevice device, ImageLayout layout) {
         VkImageCreateInfo imageInfo = VkImageCreateInfo.calloc();
         imageInfo.sType(VK13.VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
         imageInfo.imageType(VK13.VK_IMAGE_TYPE_2D);

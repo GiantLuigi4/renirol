@@ -17,3 +17,7 @@
       (JNIEnv *, jclass) {
       return (jint) GetDoubleClickTime();
     }
+    JNIEXPORT void JNICALL Java_tfc_renirol_util_windows_ReniUser32_GetClientRect
+      (JNIEnv *, jclass, jlong hwnd, jlong rect) {
+        GetClientRect((HWND) hwnd, (RECT*) rect);
+    }

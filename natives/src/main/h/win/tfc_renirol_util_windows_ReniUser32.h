@@ -39,6 +39,9 @@ JNIEXPORT jboolean JNICALL Java_tfc_renirol_util_windows_ReniUser32_ReleaseCaptu
 JNIEXPORT jint JNICALL Java_tfc_renirol_util_windows_ReniUser32_GetDoubleClickTime
   (JNIEnv *, jclass);
 
+JNIEXPORT void JNICALL Java_tfc_renirol_util_windows_ReniUser32_GetClientRect
+(JNIEnv *, jclass, jlong hwnd, jlong rect);
+
 #ifdef __cplusplus
 }
 #endif

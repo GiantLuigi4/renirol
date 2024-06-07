@@ -1,7 +1,6 @@
 package tfc.renirol.frontend.windowing;
 
 import tfc.renirol.ReniContext;
-import tfc.renirol.Renirol;
 import tfc.renirol.frontend.windowing.listener.KeyboardListener;
 import tfc.renirol.frontend.windowing.listener.MouseListener;
 
@@ -33,6 +32,8 @@ public abstract class GenericWindow {
     public abstract void swapAndPollSize();
 
     public abstract long handle();
+
+    public abstract void captureMouse();
 
     public abstract void setName(String name);
 

@@ -1,6 +1,7 @@
 package tfc.renirol.util.windows;
 
 import org.lwjgl.system.NativeType;
+import org.lwjgl.system.windows.RECT;
 import org.lwjgl.system.windows.User32;
 import tfc.renirol.util.accel.ReniLib;
 
@@ -30,4 +31,10 @@ public class ReniUser32 {
     public static @NativeType("UINT") int GetDpiForWindow(@NativeType("HWND") long hwnd) {
         return User32.GetDpiForWindow(hwnd);
     }
+
+    public static void GetClientRect(@NativeType("HWND") long hwnd, RECT rect) {
+        GetClientRect(hwnd, rect.address());
+    }
+
+    public static native void GetClientRect(@NativeType("HWND") long hwnd, @NativeType("RECT") long rect);
 }

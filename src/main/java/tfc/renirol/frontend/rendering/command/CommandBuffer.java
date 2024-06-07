@@ -25,7 +25,7 @@ import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
 import tfc.renirol.frontend.rendering.pass.ReniPassAttachment;
 import tfc.renirol.frontend.rendering.resource.buffer.GPUBuffer;
 import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorSet;
-import tfc.renirol.frontend.rendering.resource.image.ImageBacked;
+import tfc.renirol.frontend.rendering.resource.image.itf.ImageBacked;
 import tfc.renirol.itf.ReniDestructable;
 import tfc.renirol.itf.ReniTaggable;
 

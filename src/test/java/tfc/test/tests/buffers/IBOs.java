@@ -9,9 +9,7 @@ import tfc.renirol.frontend.enums.ImageLayout;
 import tfc.renirol.frontend.enums.IndexSize;
 import tfc.renirol.frontend.enums.Operation;
 import tfc.renirol.frontend.enums.format.AttributeFormat;
-import tfc.renirol.frontend.enums.masks.AccessMask;
 import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
-import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
@@ -38,15 +36,10 @@ public class IBOs {
         ReniSetup.initialize();
         System.out.println("PC: " + (PerformanceCounters.GetTickCount() - start));
 
-        RenderPassInfo pass;
-        {
-            pass = new RenderPassInfo(ReniSetup.GRAPHICS_CONTEXT.getLogical(), ReniSetup.GRAPHICS_CONTEXT.getSurface());
-            pass.colorAttachment(
-                    Operation.CLEAR, Operation.PERFORM,
-                    ImageLayout.COLOR_ATTACHMENT_OPTIMAL, ImageLayout.PRESENT,
-                    ReniSetup.selector
-            );
-        }
+        RenderPassInfo pass = ReniSetup.GRAPHICS_CONTEXT.getPass(
+                Operation.CLEAR, Operation.PERFORM,
+                ImageLayout.PRESENT
+        );
 
         ShaderCompiler compiler = new ShaderCompiler();
         compiler.setupGlsl();
@@ -135,15 +128,7 @@ public class IBOs {
 
                 buffer.begin();
 
-                buffer.transition(
-                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
-                        StageMask.TOP_OF_PIPE,
-                        StageMask.COLOR_ATTACHMENT_OUTPUT,
-                        ImageLayout.UNDEFINED,
-                        ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
-                        AccessMask.NONE,
-                        AccessMask.COLOR_WRITE
-                );
+                ReniSetup.GRAPHICS_CONTEXT.prepareChain(buffer);
 
                 buffer.startLabel("Main Pass", 0.5f, 0, 0, 0.5f);
                 buffer.beginPass(pass, ReniSetup.GRAPHICS_CONTEXT.getChainBuffer(), ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
@@ -165,15 +150,7 @@ public class IBOs {
                 buffer.endPass();
                 buffer.endLabel();
 
-                buffer.transition(
-                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
-                        StageMask.COLOR_ATTACHMENT_OUTPUT,
-                        StageMask.BOTTOM_OF_PIPE,
-                        ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
-                        ImageLayout.PRESENT,
-                        AccessMask.COLOR_WRITE,
-                        AccessMask.NONE
-                );
+                ReniSetup.GRAPHICS_CONTEXT.preparePresent(buffer);
 
                 buffer.end();
 

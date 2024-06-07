@@ -13,6 +13,8 @@ import tfc.renirol.frontend.enums.modes.image.WrapMode;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
+import tfc.renirol.frontend.rendering.resource.image.itf.ImageBacked;
+import tfc.renirol.frontend.rendering.resource.image.itf.RecreateableImage;
 import tfc.renirol.frontend.rendering.resource.image.texture.TextureSampler;
 import tfc.renirol.itf.ReniDestructable;
 import tfc.renirol.itf.ReniTaggable;
@@ -22,7 +24,7 @@ import java.nio.ByteBuffer;
 import static org.lwjgl.vulkan.VK10.*;
 
 // TODO:
-public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image> {
+public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image>, RecreateableImage {
     final ReniLogicalDevice logical;
     final VkDevice device;
 
@@ -48,6 +50,10 @@ public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image>
     }
 
     int format;
+
+    public int getFormat() {
+        return format;
+    }
 
     public void recreate(int width, int height) {
         destroy();
