@@ -287,7 +287,7 @@ public class ReniContext implements ReniDestructable {
     }
 
     public void submitFrame(CommandBuffer buffer) {
-        buffer.submit(
+        buffer.submitAsync(
                 getLogical().getStandardQueue(ReniQueueType.GRAPHICS),
                 // TODO: look at later
                 // https://themaister.net/blog/2019/08/14/yet-another-blog-explaining-vulkan-synchronization/

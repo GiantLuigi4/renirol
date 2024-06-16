@@ -20,6 +20,7 @@ import tfc.renirol.itf.ReniDestructable;
 import tfc.renirol.itf.ReniTaggable;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -42,10 +43,22 @@ public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image>
         this.device = device.getDirect(VkDevice.class);
     }
 
-    SwapchainUsage usage = SwapchainUsage.COLOR;
+    SwapchainUsage[] usages = new SwapchainUsage[]{SwapchainUsage.COLOR};
 
     public Image setUsage(SwapchainUsage usage) {
-        this.usage = usage;
+        this.usages = new SwapchainUsage[]{usage};
+        return this;
+    }
+
+    /**
+     * Sets the image for a collection of usages
+     * The first usage is the primary usage
+     *
+     * @param usages the collection of usages this image will be used for
+     * @return self
+     */
+    public Image setUsage(SwapchainUsage... usages) {
+        this.usages = Arrays.copyOf(usages, usages.length);
         return this;
     }
 
@@ -80,7 +93,13 @@ public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image>
 
         imageInfo.initialLayout(VK13.VK_IMAGE_LAYOUT_UNDEFINED);
 
-        imageInfo.usage(usage.id);
+        int usage = 0;
+        int aspect = 0;
+        for (SwapchainUsage swapchainUsage : usages) {
+            usage |= swapchainUsage.id;
+            aspect |= swapchainUsage.aspect;
+        }
+        imageInfo.usage(usage);
         imageInfo.sharingMode(VK13.VK_SHARING_MODE_EXCLUSIVE);
 
         imageInfo.samples(VK13.VK_SAMPLE_COUNT_1_BIT);
@@ -112,7 +131,7 @@ public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image>
             viewInfo.image(handle);
             viewInfo.viewType(VK13.VK_IMAGE_VIEW_TYPE_2D);
             viewInfo.format(format);
-            viewInfo.subresourceRange().aspectMask(usage.aspect);
+            viewInfo.subresourceRange().aspectMask(aspect);
             viewInfo.subresourceRange().baseMipLevel(0);
             viewInfo.subresourceRange().levelCount(1);
             viewInfo.subresourceRange().baseArrayLayer(0);
@@ -127,7 +146,7 @@ public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image>
                 true, false, true
         );
         cmd.begin();
-        switch (usage) {
+        switch (usages[0]) {
             case COLOR -> {
                 cmd.transition(
                         handle,
@@ -139,14 +158,14 @@ public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image>
             case DEPTH -> {
                 cmd.transition(
                         handle,
-                        usage,
+                        usages[0],
                         StageMask.TOP_OF_PIPE, StageMask.FRAGMENT_TEST,
                         ImageLayout.UNDEFINED, ImageLayout.DEPTH_STENCIL_ATTACHMENT_OPTIMAL
                 );
             }
         }
         cmd.end();
-        cmd.submit(
+        cmd.submitBlocking(
                 logical.getStandardQueue(ReniQueueType.GRAPHICS),
                 StageMask.COLOR_ATTACHMENT_OUTPUT
         );

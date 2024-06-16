@@ -81,7 +81,7 @@ public class Atlas {
                 AccessMask.NONE, AccessMask.SHADER_READ
         );
         buffer.end();
-        buffer.submit(logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS), StageMask.COLOR_ATTACHMENT_OUTPUT);
+        buffer.submitBlocking(logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS), StageMask.COLOR_ATTACHMENT_OUTPUT);
 
         this.logicalDevice = logicalDevice;
     }
@@ -215,11 +215,10 @@ public class Atlas {
                 AccessMask.TRANSFER_WRITE, AccessMask.SHADER_READ
         );
         buffer.end();
-        buffer.submit(
+        buffer.submitBlocking(
                 logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS),
                 StageMask.COLOR_ATTACHMENT_OUTPUT
         );
-        logicalDevice.getStandardQueue(ReniQueueType.GRAPHICS).await();
         rs.forEach(Runnable::run);
         rs.clear();
     }

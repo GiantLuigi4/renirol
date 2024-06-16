@@ -185,7 +185,7 @@ public class Texture implements ReniDestructable, ImageBacked, ReniTaggable<Text
             );
             buffer.endLabel();
             buffer.end();
-            buffer.submit(
+            buffer.submitBlocking(
                     device.getStandardQueue(ReniQueueType.GRAPHICS),
                     StageMask.COLOR_ATTACHMENT_OUTPUT
             );

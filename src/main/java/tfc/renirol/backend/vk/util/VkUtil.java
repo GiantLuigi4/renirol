@@ -157,6 +157,16 @@ public class VkUtil {
         }
     }
 
+    public static <T, V> V managed(
+            T t,
+            Function<T, V> resultProvider,
+            Consumer<T> end
+    ) {
+        V v = resultProvider.apply(t);
+        end.accept(t);
+        return v;
+    }
+
     static class pair<T> {
         T t;
         int v;

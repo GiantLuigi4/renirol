@@ -256,14 +256,24 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
         MemoryUtil.memFree(pb);
     }
 
-    public void submit(ReniQueue queue, int expectedStage, long fence, long waitSemaphore, long signalSemaphore) {
+    public void submitAsync(ReniQueue queue, int expectedStage, long fence, long waitSemaphore, long signalSemaphore) {
         dstStage.put(0, expectedStage);
         this.waitSemaphore.put(0, waitSemaphore);
         this.signalSemaphore.put(0, signalSemaphore);
         VkUtil.check(nvkQueueSubmit(queue.getDirect(VkQueue.class), 1, submitInfo.address(), fence));
     }
 
+    @Deprecated(forRemoval = true)
     public void submit(ReniQueue queue, StageMask targetStage) {
+        submitBlocking(queue, targetStage);
+    }
+
+    public void submitBlocking(ReniQueue queue, StageMask targetStage) {
+        submitAsync(queue, targetStage);
+        queue.await();
+    }
+
+    public void submitAsync(ReniQueue queue, StageMask targetStage) {
         dstStage.put(0, targetStage.value);
         VkSubmitInfo info = VkSubmitInfo.calloc();
         info.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
@@ -272,7 +282,6 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
         info.pWaitDstStageMask(dstStage);
 
         VkUtil.check(nvkQueueSubmit(queue.getDirect(VkQueue.class), 1, info.address(), 0));
-        queue.await();
         info.free();
     }
 
@@ -527,6 +536,19 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
                 cmd, bindPoint.id,
                 pipeline0.layout.handle,
                 0,
+                1, MemoryUtil.memAddress(buf),
+                0, 0
+        );
+        MemoryUtil.memFree(buf);
+    }
+
+    public void bindDescriptor(BindPoint bindPoint, GraphicsPipeline pipeline0, DescriptorSet set, int id) {
+        LongBuffer buf = MemoryUtil.memAllocLong(1);
+        buf.put(0, set.handle);
+        VK13.nvkCmdBindDescriptorSets(
+                cmd, bindPoint.id,
+                pipeline0.layout.handle,
+                id,
                 1, MemoryUtil.memAddress(buf),
                 0, 0
         );
