@@ -4,6 +4,7 @@ import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
+import tfc.renirol.frontend.enums.modes.CullMode;
 import tfc.renirol.frontend.enums.modes.PrimitiveType;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
@@ -32,6 +33,7 @@ public class PipelineState {
     VkPipelineColorBlendStateCreateInfo colorBlending = VkPipelineColorBlendStateCreateInfo.calloc();
     VkPipelineDepthStencilStateCreateInfo depthStencil = VkPipelineDepthStencilStateCreateInfo.calloc();
     VkPipelineTessellationStateCreateInfo tessellationState = VkPipelineTessellationStateCreateInfo.calloc();
+    CullMode cullface = CullMode.BACK;
 
     public PipelineState(ReniLogicalDevice device) {
         this.device = device.getDirect(VkDevice.class);
@@ -123,6 +125,12 @@ public class PipelineState {
 
     public PipelineState setTopology(PrimitiveType type) {
         inputAssembly.topology(type.id);
+        return this;
+    }
+
+    public PipelineState setCullface(CullMode mode) {
+        rasterizer.cullMode(mode.id);
+        this.cullface = mode;
         return this;
     }
 

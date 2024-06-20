@@ -3,7 +3,7 @@ package tfc.test.tests.font;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VK13;
 import tfc.renirol.frontend.enums.ImageLayout;
-import tfc.renirol.frontend.enums.flags.SwapchainUsage;
+import tfc.renirol.frontend.enums.flags.ImageUsage;
 import tfc.renirol.frontend.enums.format.BitDepth;
 import tfc.renirol.frontend.enums.format.TextureChannels;
 import tfc.renirol.frontend.enums.masks.AccessMask;
@@ -64,7 +64,7 @@ public class Atlas {
     private final Image img;
 
     public Atlas(ReniLogicalDevice logicalDevice, int width, int height) {
-        img = new Image(logicalDevice).setUsage(SwapchainUsage.GENERIC);
+        img = new Image(logicalDevice).setUsage(ImageUsage.GENERIC);
         img.create(this.width = width, this.height = height, VK13.VK_FORMAT_R8G8B8A8_SRGB);
         img.setName("Atlas Image");
 

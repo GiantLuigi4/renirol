@@ -7,8 +7,8 @@ import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.enums.BindPoint;
 import tfc.renirol.frontend.enums.ImageLayout;
 import tfc.renirol.frontend.enums.IndexSize;
+import tfc.renirol.frontend.enums.flags.ImageUsage;
 import tfc.renirol.frontend.enums.flags.ShaderStageFlags;
-import tfc.renirol.frontend.enums.flags.SwapchainUsage;
 import tfc.renirol.frontend.enums.masks.AccessMask;
 import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.enums.modes.CompareOp;
@@ -430,7 +430,7 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
             StageMask oldStage, StageMask newStage,
             ImageLayout oldLayout, ImageLayout newLayout,
             AccessMask oldAccess, AccessMask newAccess,
-            SwapchainUsage usage
+            ImageUsage usage
     ) {
         VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1);
         barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
@@ -458,7 +458,7 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
 
     public void transition(
             long image,
-            SwapchainUsage usage,
+            ImageUsage usage,
             StageMask oldStage, StageMask newStage,
             ImageLayout oldLayout, ImageLayout newLayout
     ) {

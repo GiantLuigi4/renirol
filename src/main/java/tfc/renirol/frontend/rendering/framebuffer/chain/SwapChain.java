@@ -3,7 +3,7 @@ package tfc.renirol.frontend.rendering.framebuffer.chain;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
-import tfc.renirol.frontend.enums.flags.SwapchainUsage;
+import tfc.renirol.frontend.enums.flags.ImageUsage;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
 import tfc.renirol.frontend.hardware.device.support.image.ReniSwapchainCapabilities;
@@ -38,10 +38,15 @@ public class SwapChain implements ReniDestructable {
     VkSurfaceFormatKHR format;
     VkExtent2D extents;
     boolean initialized = false;
-    SwapchainUsage usage = SwapchainUsage.COLOR;
+    ImageUsage[] usages = new ImageUsage[]{ImageUsage.COLOR};
 
-    public SwapChain setUsage(SwapchainUsage usage) {
-        this.usage = usage;
+    public SwapChain setUsage(ImageUsage usage) {
+        this.usages = new ImageUsage[]{usage};
+        return this;
+    }
+
+    public SwapChain setUsage(ImageUsage... usage) {
+        this.usages = usage;
         return this;
     }
 
@@ -54,6 +59,13 @@ public class SwapChain implements ReniDestructable {
         if (initialized) destroy();
 
         ReniSwapchainCapabilities image = device.hardware.features.image(surface);
+
+        int usage = 0;
+        int aspect = 0;
+        for (ImageUsage swapchainUsage : usages) {
+            usage |= swapchainUsage.id;
+            aspect |= swapchainUsage.aspect;
+        }
 
         // create swapchain object
         {
@@ -78,7 +90,7 @@ public class SwapChain implements ReniDestructable {
             createInfo.imageColorSpace(format.colorSpace());
             createInfo.imageExtent(extent);
             createInfo.imageArrayLayers(1);
-            createInfo.imageUsage(usage.id);
+            createInfo.imageUsage(usage);
 
             // sharing
             int graphics, transfer;
@@ -161,7 +173,7 @@ public class SwapChain implements ReniDestructable {
             viewCI.components().b(VK10.VK_COMPONENT_SWIZZLE_IDENTITY);
             viewCI.components().a(VK10.VK_COMPONENT_SWIZZLE_IDENTITY);
             // subresource stuff
-            viewCI.subresourceRange().aspectMask(usage.aspect);
+            viewCI.subresourceRange().aspectMask(aspect);
             viewCI.subresourceRange().baseMipLevel(0);
             viewCI.subresourceRange().levelCount(1);
             viewCI.subresourceRange().baseArrayLayer(0);

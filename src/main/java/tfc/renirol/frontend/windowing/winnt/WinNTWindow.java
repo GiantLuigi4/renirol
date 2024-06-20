@@ -289,8 +289,8 @@ public class WinNTWindow extends GenericWindow {
         return shouldClose;
     }
 
-    public void swap() {
-        context.swapBuffers(this);
+    public boolean swap() {
+        return context.swapBuffers(this);
     }
 
     public void pollSize() {
@@ -298,8 +298,7 @@ public class WinNTWindow extends GenericWindow {
     }
 
     @Override
-    public void swapAndPollSize() {
-        context.swapBuffers(this);
+    public boolean swapAndPollSize() {
         User32.GetWindowRect(hwnd, rect);
 
         MSG msg = MSG.calloc();
@@ -311,6 +310,8 @@ public class WinNTWindow extends GenericWindow {
             }
         }
         msg.free();
+
+        return context.swapBuffers(this);
     }
 
     @Override
@@ -353,6 +354,7 @@ public class WinNTWindow extends GenericWindow {
         return clipRect;
     }
 
+    @Override
     public void freeMouse() {
         captureMouse = false;
         User32.ClipCursor(null);

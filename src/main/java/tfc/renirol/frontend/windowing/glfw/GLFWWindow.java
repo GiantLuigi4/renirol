@@ -64,17 +64,17 @@ public class GLFWWindow extends GenericWindow {
         return GLFW.glfwWindowShouldClose(handle);
     }
 
-    public void swap() {
-        context.swapBuffers(this);
+    public boolean swap() {
+        return context.swapBuffers(this);
     }
 
     public void pollSize() {
         GLFW.glfwGetWindowSize(handle, width, height);
     }
 
-    public void swapAndPollSize() {
-        context.swapBuffers(this);
+    public boolean swapAndPollSize() {
         GLFW.glfwGetWindowSize(handle, width, height);
+        return context.swapBuffers(this);
     }
 
     public void addMouseListener(BiConsumer<Double, Double> listener) {

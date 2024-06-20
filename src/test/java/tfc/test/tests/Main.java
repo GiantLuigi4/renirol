@@ -110,19 +110,19 @@ public class Main {
                 buffer.end();
 
                 ReniSetup.GRAPHICS_CONTEXT.submitFrame(buffer);
-                ReniSetup.GRAPHICS_CONTEXT.getLogical().waitForIdle();
+                ReniSetup.GRAPHICS_CONTEXT.getLogical().await();
 
                 ReniSetup.WINDOW.swapAndPollSize();
                 GLFWWindow.poll();
 
-                ReniSetup.GRAPHICS_CONTEXT.getLogical().waitForIdle();
+                ReniSetup.GRAPHICS_CONTEXT.getLogical().await();
             }
             buffer.destroy();
         } catch (Throwable err) {
             err.printStackTrace();
         }
 
-        ReniSetup.GRAPHICS_CONTEXT.getLogical().waitForIdle();
+        ReniSetup.GRAPHICS_CONTEXT.getLogical().await();
         FRAG.destroy();
         VERT.destroy();
         pipeline0.destroy();

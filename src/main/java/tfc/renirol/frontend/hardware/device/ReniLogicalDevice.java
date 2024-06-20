@@ -55,7 +55,7 @@ public class ReniLogicalDevice implements ReniTaggable<ReniLogicalDevice> {
         return standardIndices.get(queueType);
     }
 
-    public void waitForIdle() {
+    public void await() {
         VK13.vkDeviceWaitIdle(direct);
     }
 

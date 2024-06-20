@@ -6,7 +6,7 @@ import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.enums.ImageLayout;
 import tfc.renirol.frontend.enums.Operation;
-import tfc.renirol.frontend.enums.flags.SwapchainUsage;
+import tfc.renirol.frontend.enums.flags.ImageUsage;
 import tfc.renirol.frontend.enums.masks.AccessMask;
 import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.hardware.device.ReniHardwareDevice;
@@ -144,7 +144,7 @@ public class ReniContext implements ReniDestructable {
     int depthIdx = -1;
 
     public void createDepth() {
-        additional.add(Attachment.depth(new Image(logical).setUsage(SwapchainUsage.DEPTH)));
+        additional.add(Attachment.depth(new Image(logical).setUsage(ImageUsage.DEPTH)));
         buffer = new ChainBuffer(frame, graphicsChain, additional.toArray(new Attachment[0]));
         depthIdx = additional.size() - 1;
     }
@@ -176,7 +176,13 @@ public class ReniContext implements ReniDestructable {
     Fence fenceA;
     Semaphore semaphoreB;
 
-    public void swapBuffers(GenericWindow handle) {
+    /**
+     * Presents the current frame to the window
+     *
+     * @param handle the window to present the frame to
+     * @return whether internal buffers had to be resized
+     */
+    public boolean swapBuffers(GenericWindow handle) {
         // glfwSwapBuffers for OpenGL
 
         LongBuffer buffer1 = MemoryUtil.memAllocLong(1);
@@ -192,15 +198,17 @@ public class ReniContext implements ReniDestructable {
         presentInfo.pSwapchains(buffer1);
         presentInfo.pImageIndices(indices);
         presentInfo.pWaitSemaphores(semaphores);
-        checkResize(
+        if (checkResize(
                 KHRSwapchain.nvkQueuePresentKHR(logical.getStandardQueue(ReniQueueType.TRANSFER).getDirect(VkQueue.class), presentInfo.address()),
                 handle
-        );
+        )) return true;
 
         presentInfo.free();
         MemoryUtil.memFree(semaphores);
         MemoryUtil.memFree(buffer1);
         MemoryUtil.memFree(indices);
+
+        return false;
     }
 
     public void supportingDevice(DeviceQuery query) {
@@ -244,19 +252,27 @@ public class ReniContext implements ReniDestructable {
         return logical;
     }
 
-    public void prepareFrame(GenericWindow window) {
+    /**
+     * Prepares the graphics context for rendering a frame
+     *
+     * @param window the window to prepare the frame for
+     * @return whether internal buffers had to be resized
+     */
+    public boolean prepareFrame(GenericWindow window) {
         Renirol.useContext(this);
         if (checkResize(
                 graphicsChain.acquire(frame, semaphoreA.handle),
                 window
         )) {
             graphicsChain.acquire(frame, semaphoreA.handle);
+            return true;
         }
+        return false;
     }
 
     private boolean checkResize(int result, GenericWindow window) {
         if (result == KHRSwapchain.VK_ERROR_OUT_OF_DATE_KHR) {
-            logical.waitForIdle();
+            logical.await();
             window.pollSize();
             resize(buffer, window);
             return true;
@@ -340,7 +356,7 @@ public class ReniContext implements ReniDestructable {
                         ImageLayout.DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                         AccessMask.NONE,
                         AccessMask.DEPTH_WRITE,
-                        SwapchainUsage.DEPTH
+                        ImageUsage.DEPTH
                 );
             } else {
                 buffer.transition(

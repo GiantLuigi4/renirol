@@ -194,7 +194,7 @@ public class Texture implements ReniDestructable, ImageBacked, ReniTaggable<Text
             inf.free();
 
             // must wait for idle to destroy buffer
-            device.waitForIdle();
+            device.await();
             buffer.destroy();
 
             data.destroy();

@@ -239,7 +239,7 @@ public class Textures {
                 ReniSetup.WINDOW.swapAndPollSize();
                 GLFWWindow.poll();
 
-                ReniSetup.GRAPHICS_CONTEXT.getLogical().waitForIdle();
+                ReniSetup.GRAPHICS_CONTEXT.getLogical().await();
             }
             buffer.destroy();
         } catch (Throwable err) {
@@ -254,7 +254,7 @@ public class Textures {
         MemoryUtil.memFree(buffer1);
         ibo.destroy();
         vbo.destroy();
-        ReniSetup.GRAPHICS_CONTEXT.getLogical().waitForIdle();
+        ReniSetup.GRAPHICS_CONTEXT.getLogical().await();
         FRAG.destroy();
         VERT.destroy();
         desc0.destroy();

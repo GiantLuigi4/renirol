@@ -3,6 +3,8 @@ package tfc.renirol.frontend.rendering.command.pipeline;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
+import tfc.renirol.frontend.enums.modes.CullMode;
+import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.command.shader.Shader;
 import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
 import tfc.renirol.frontend.rendering.pass.ReniPassAttachment;
@@ -14,15 +16,18 @@ public class GraphicsPipeline {
     public final long handle;
     public final VkDevice device;
     public final PipelineLayout layout;
+    public final CullMode cullFace;
 
-    public GraphicsPipeline(long handle, VkDevice device, long layout) {
+    public GraphicsPipeline(long handle, VkDevice device, long layout, CullMode cullFace) {
         this.handle = handle;
         this.device = device;
         this.layout = new PipelineLayout(layout, device);
+        this.cullFace = cullFace;
     }
 
     public GraphicsPipeline(RenderPassInfo info, PipelineState layout, Shader... shaders) {
         this.layout = layout.create();
+        this.cullFace = layout.cullface;
 
         VkGraphicsPipelineCreateInfo pipelineInfo = VkGraphicsPipelineCreateInfo.calloc();
 
@@ -86,5 +91,9 @@ public class GraphicsPipeline {
     public void destroy() {
         VK10.nvkDestroyPipeline(device, handle, 0);
         layout.destroy();
+    }
+
+    public void bind(CommandBuffer buffer) {
+        buffer.bindPipe(this);
     }
 }

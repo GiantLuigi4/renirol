@@ -4,7 +4,7 @@ import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.enums.ImageLayout;
-import tfc.renirol.frontend.enums.flags.SwapchainUsage;
+import tfc.renirol.frontend.enums.flags.ImageUsage;
 import tfc.renirol.frontend.enums.masks.AccessMask;
 import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.enums.modes.image.FilterMode;
@@ -43,10 +43,10 @@ public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image>
         this.device = device.getDirect(VkDevice.class);
     }
 
-    SwapchainUsage[] usages = new SwapchainUsage[]{SwapchainUsage.COLOR};
+    ImageUsage[] usages = new ImageUsage[]{ImageUsage.COLOR};
 
-    public Image setUsage(SwapchainUsage usage) {
-        this.usages = new SwapchainUsage[]{usage};
+    public Image setUsage(ImageUsage usage) {
+        this.usages = new ImageUsage[]{usage};
         return this;
     }
 
@@ -57,7 +57,7 @@ public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image>
      * @param usages the collection of usages this image will be used for
      * @return self
      */
-    public Image setUsage(SwapchainUsage... usages) {
+    public Image setUsage(ImageUsage... usages) {
         this.usages = Arrays.copyOf(usages, usages.length);
         return this;
     }
@@ -95,7 +95,7 @@ public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image>
 
         int usage = 0;
         int aspect = 0;
-        for (SwapchainUsage swapchainUsage : usages) {
+        for (ImageUsage swapchainUsage : usages) {
             usage |= swapchainUsage.id;
             aspect |= swapchainUsage.aspect;
         }
@@ -169,7 +169,7 @@ public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image>
                 logical.getStandardQueue(ReniQueueType.GRAPHICS),
                 StageMask.COLOR_ATTACHMENT_OUTPUT
         );
-        logical.waitForIdle();
+        logical.await();
         cmd.destroy();
     }
 
