@@ -271,7 +271,14 @@ public class ReniContext implements ReniDestructable {
     }
 
     private boolean checkResize(int result, GenericWindow window) {
-        if (result == KHRSwapchain.VK_ERROR_OUT_OF_DATE_KHR) {
+        if (
+                // if the swapchain is out of date, then its size must be updated
+                result == KHRSwapchain.VK_ERROR_OUT_OF_DATE_KHR ||
+                        // if the window's size has changed, the buffers must be resized
+                        // reason: AMD doesn't report that the swapchain is out of date, so I need to track that manually
+                        window.getWidth() != graphicsChain.getExtents().width() ||
+                        window.getHeight() != graphicsChain.getExtents().height()
+        ) {
             logical.await();
             window.pollSize();
             resize(buffer, window);
