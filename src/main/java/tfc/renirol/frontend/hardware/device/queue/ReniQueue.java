@@ -1,4 +1,4 @@
-package tfc.renirol.frontend.rendering;
+package tfc.renirol.frontend.hardware.device.queue;
 
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
@@ -14,10 +14,12 @@ import static org.lwjgl.vulkan.VK10.VK_OBJECT_TYPE_QUEUE;
 public class ReniQueue implements ReniTaggable<ReniQueue> {
     private final ReniLogicalDevice device;
     private final VkQueue direct;
+    public final int index;
 
-    public ReniQueue(ReniLogicalDevice device, VkQueue direct) {
+    public ReniQueue(ReniLogicalDevice device, VkQueue direct, int index) {
         this.device = device;
         this.direct = direct;
+        this.index = index;
     }
 
     public <T> T getDirect(Class<T> type) {

@@ -8,6 +8,7 @@ import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.hardware.device.support.ReniDeviceFeatures;
 import tfc.renirol.frontend.hardware.device.support.ReniDeviceInformation;
 import tfc.renirol.frontend.hardware.device.support.ReniDeviceType;
+import tfc.renirol.frontend.hardware.util.QueueRequest;
 import tfc.renirol.frontend.hardware.util.ReniHardwareCapability;
 import tfc.renirol.util.ReadOnlyList;
 
@@ -176,104 +177,41 @@ public class ReniHardwareDevice {
 
         // TODO: request first indices, request specific indices
 
-        HashMap<ReniQueueType, Integer> indices;
+        List<QueueRequest.QueueInfo> chosen;
 
-        public LogicalDeviceBuilder requestSplitIndices(
-                ReniQueueType... types
-        ) {
+        public LogicalDeviceBuilder requestIndices(QueueRequest request) {
             if (queueCreateInfo != null)
                 return this;
 
-            HashMap<ReniQueueType, List<Integer>> byType = new HashMap<>();
-            for (ReniQueueType type : types) {
-                ArrayList<Integer> l = new ArrayList<>(ReniHardwareDevice.this.getQueueInformation(type));
-                byType.put(type, l);
+            request.prepare(ReniHardwareDevice.this, (type) -> new ArrayList<>(ReniHardwareDevice.this.getQueueInformation(type)));
+            chosen = request.select();
+            System.out.println(chosen);
 
-                for (ReniQueueType reniQueueType : types) {
-                    List<Integer> bak = new ArrayList<>(l);
-                    if (type != reniQueueType)
-                        l.removeAll(ReniHardwareDevice.this.getQueueInformation(reniQueueType));
-                    if (l.isEmpty()) l.addAll(bak);
-                }
-            }
-
-            FloatBuffer prior = MemoryUtil.memAllocFloat(1);
-            prior.put(0, 1f);
-
-            indices = new HashMap<>();
-
-            HashSet<Integer> UNIQUE = new HashSet<>(byType.size());
-            byType.forEach((k, v) -> {
-                int index = 0;
-                for (List<Integer> value : byType.values()) {
-                    if (k.isApplicable(value.get(0))) {
-                        if (v.get(0).intValue() != value.get(0).intValue()) {
-                            index++;
-                        } else {
-                            break;
-                        }
-                    }
-                }
-                indices.put(k, v.get(0));
-                UNIQUE.add(v.get(0));
-            });
-
-            queueCreateInfo = VkDeviceQueueCreateInfo.calloc(UNIQUE.size());
-            int idx = 0;
-            for (Integer i : UNIQUE) {
-                VkDeviceQueueCreateInfo info = queueCreateInfo.get(idx);
-                info.sType(VK10.VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO);
-                info.queueFamilyIndex(i);
-                info.pQueuePriorities(prior);
-                idx++;
-            }
-
-            createInfo.pQueueCreateInfos(queueCreateInfo);
-
-            long addr = MemoryUtil.memAddress(prior);
-            releaseFuncs.add(() -> MemoryUtil.nmemFree(addr));
-            releaseFuncs.add(queueCreateInfo::free);
-
-            return this;
-        }
-
-        public LogicalDeviceBuilder requestSharedIndices(
-                ReniQueueType... types
-        ) {
-            if (queueCreateInfo != null)
-                return this;
-
-            ArrayList<Integer> all = new ArrayList<>();
-            for (ReniQueueType index : types)
-                all.addAll(ReniHardwareDevice.this.getQueueInformation(index));
-            for (ReniQueueType index : types)
-                all.retainAll(ReniHardwareDevice.this.getQueueInformation(index));
-
-            FloatBuffer prior = MemoryUtil.memAllocFloat(1);
-            prior.put(0, 1f);
-
-            HashSet<Integer> UNIQUE = new HashSet<>();
-
-            indices = new HashMap<>();
-            UNIQUE.add(all.get(0));
-            for (ReniQueueType type : types) {
-                indices.put(type, all.get(0));
+            HashSet<QueueRequest.QueueInfo> UNIQUE = new HashSet<>();
+            for (QueueRequest.QueueInfo queueInfo : chosen) {
+                UNIQUE.add(queueInfo);
             }
 
             queueCreateInfo = VkDeviceQueueCreateInfo.calloc(UNIQUE.size());
             int idx = 0;
-            for (Integer i : UNIQUE) {
+            for (QueueRequest.QueueInfo i : UNIQUE) {
+                FloatBuffer prior = MemoryUtil.memAllocFloat(i.count());
+                for (int i1 = 0; i1 < i.count(); i1++)
+                    prior.put(i1, i.count() - i1);
+
                 VkDeviceQueueCreateInfo info = queueCreateInfo.get(idx);
                 info.sType(VK10.VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO);
-                info.queueFamilyIndex(i);
+                info.queueFamilyIndex(i.index());
                 info.pQueuePriorities(prior);
+                VkDeviceQueueCreateInfo.nqueueCount(info.address(), i.count());
                 idx++;
+
+                long addr = MemoryUtil.memAddress(prior);
+                releaseFuncs.add(() -> MemoryUtil.nmemFree(addr));
             }
 
             createInfo.pQueueCreateInfos(queueCreateInfo);
 
-            long addr = MemoryUtil.memAddress(prior);
-            releaseFuncs.add(() -> MemoryUtil.nmemFree(addr));
             releaseFuncs.add(queueCreateInfo::free);
 
             return this;
@@ -299,7 +237,7 @@ public class ReniHardwareDevice {
 
             ReniLogicalDevice device = VkUtil.getChecked(
                     (buf) -> VK10.nvkCreateDevice(direct, createInfo.address(), 0, buf.address()),
-                    (handle) -> new ReniLogicalDevice(indices, new VkDevice(handle, ReniHardwareDevice.this.direct, createInfo), ReniHardwareDevice.this, new HashSet<>(ext))
+                    (handle) -> new ReniLogicalDevice(chosen, new VkDevice(handle, ReniHardwareDevice.this.direct, createInfo), ReniHardwareDevice.this, new HashSet<>(ext))
             );
             for (Runnable releaseFunc : releaseFuncs) releaseFunc.run();
             return device;

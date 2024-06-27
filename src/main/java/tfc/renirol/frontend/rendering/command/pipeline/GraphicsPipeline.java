@@ -8,11 +8,12 @@ import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.command.shader.Shader;
 import tfc.renirol.frontend.rendering.pass.RenderPassInfo;
 import tfc.renirol.frontend.rendering.pass.ReniPassAttachment;
+import tfc.renirol.itf.ReniDestructable;
 
 import java.nio.IntBuffer;
 import java.util.List;
 
-public class GraphicsPipeline {
+public class GraphicsPipeline implements ReniDestructable {
     public final long handle;
     public final VkDevice device;
     public final PipelineLayout layout;

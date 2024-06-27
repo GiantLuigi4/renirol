@@ -9,6 +9,7 @@ import tfc.renirol.frontend.enums.modes.PrimitiveType;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.rendering.resource.buffer.BufferDescriptor;
 import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorLayout;
+import tfc.renirol.itf.ReniDestructable;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
@@ -16,7 +17,7 @@ import java.util.ArrayList;
 
 import static org.lwjgl.vulkan.VK10.*;
 
-public class PipelineState {
+public class PipelineState implements ReniDestructable {
     final VkDevice device;
     VkPipelineDynamicStateCreateInfo dynamic = VkPipelineDynamicStateCreateInfo.calloc();
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = VkPipelineVertexInputStateCreateInfo.calloc();
@@ -34,6 +35,33 @@ public class PipelineState {
     VkPipelineDepthStencilStateCreateInfo depthStencil = VkPipelineDepthStencilStateCreateInfo.calloc();
     VkPipelineTessellationStateCreateInfo tessellationState = VkPipelineTessellationStateCreateInfo.calloc();
     CullMode cullface = CullMode.BACK;
+
+    // TODO: check
+    @Override
+    public void destroy() {
+        dynamic.free();
+        vertexInputInfo.free();
+        inputAssembly.free();
+        viewportState.free();
+        scissor.free();
+        offset2D.free();
+        extents.free();
+        viewportState.free();
+        rasterizer.free();
+        multisampling.free();
+        colorBlendAttachment.free();
+        pipelineLayoutInfo.free();
+        colorBlending.free();
+        depthStencil.free();
+        tessellationState.free();
+        for (VkPushConstantRange vkPushConstantRange : push_constant)
+            vkPushConstantRange.free();
+        constBuf.free();
+        MemoryUtil.memFree(dynamicBuffer);
+        bindings.free();
+        attribs.free();
+        MemoryUtil.memFree(setBuffer);
+    }
 
     public PipelineState(ReniLogicalDevice device) {
         this.device = device.getDirect(VkDevice.class);
@@ -199,8 +227,6 @@ public class PipelineState {
         return this;
     }
 
-    LongBuffer layoutDescBuffer = MemoryUtil.memAllocLong(1);
-
     ArrayList<VkPushConstantRange> push_constant = new ArrayList<>();
     VkPushConstantRange.Buffer constBuf;
 
@@ -217,19 +243,6 @@ public class PipelineState {
             constBuf.put(i, this.push_constant.get(i));
         }
         pipelineLayoutInfo.pPushConstantRanges(constBuf);
-        return this;
-    }
-
-    public PipelineState setLayoutDesc(long desc) {
-        layoutDescBuffer.put(0, desc);
-        pipelineLayoutInfo.setLayoutCount(1);
-        pipelineLayoutInfo.pSetLayouts(layoutDescBuffer);
-        return this;
-    }
-
-    public PipelineState removeLayoutDesc() {
-        pipelineLayoutInfo.setLayoutCount(0);
-        pipelineLayoutInfo.pSetLayouts(null);
         return this;
     }
 

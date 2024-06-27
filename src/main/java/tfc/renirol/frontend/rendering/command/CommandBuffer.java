@@ -17,7 +17,8 @@ import tfc.renirol.frontend.enums.modes.FrontFace;
 import tfc.renirol.frontend.enums.modes.PrimitiveType;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
-import tfc.renirol.frontend.rendering.ReniQueue;
+import tfc.renirol.frontend.hardware.device.queue.ReniQueue;
+import tfc.renirol.frontend.rendering.command.pipeline.ComputePipeline;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
 import tfc.renirol.frontend.rendering.debug.DebugMarker;
 import tfc.renirol.frontend.rendering.framebuffer.Framebuffer;
@@ -88,7 +89,7 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
             poolCreateInfo.flags(VK13.VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
         else poolCreateInfo.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
-        poolCreateInfo.queueFamilyIndex(device.getQueueFamily(queueType));
+        poolCreateInfo.queueFamilyIndex(device.getQueueFamilyIndex(queueType));
         pool = VkUtil.getCheckedLong(
                 (buf) -> VK13.nvkCreateCommandPool(device.getDirect(VkDevice.class), poolCreateInfo.address(), 0, MemoryUtil.memAddress(buf))
         );
@@ -487,6 +488,27 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
         barrier.free();
     }
 
+//    public void transfer(
+//            long image,
+//            ReniQueue from, ReniQueue to
+//    ) {
+//        VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1);
+//        barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+//        barrier.srcQueueFamilyIndex(from);
+//        barrier.dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+//        // TODO: expose
+//        barrier.srcAccessMask(0);
+//        barrier.dstAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+//        VK13.vkCmdPipelineBarrier(
+//                cmd,
+//                oldStage.value, newStage.value,
+//                0,
+//                null, null,
+//                barrier
+//        );
+//        barrier.free();
+//    }
+
     boolean noClear = true;
 
     public void noClear() {
@@ -625,7 +647,16 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
         );
     }
 
+    @Deprecated(forRemoval = true)
     public void bufferBarrier(
+            GPUBuffer buffer,
+            StageMask oldStage, StageMask newStage,
+            AccessMask srcAccess, AccessMask dstAccess
+    ) {
+        transitionBuffer(buffer, oldStage, newStage, srcAccess, dstAccess);
+    }
+
+    public void transitionBuffer(
             GPUBuffer buffer,
             StageMask oldStage, StageMask newStage,
             AccessMask srcAccess, AccessMask dstAccess
@@ -669,5 +700,13 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
         }
         objectNameInfoEXT.free();
         return this;
+    }
+
+    public void bindCompute(ComputePipeline computePipeline) {
+        VK10.vkCmdBindPipeline(cmd, VK10.VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline.handle);
+    }
+
+    public void compute(int groupX, int groupY, int groupZ) {
+        vkCmdDispatch(cmd, groupX, groupY, groupZ);
     }
 }

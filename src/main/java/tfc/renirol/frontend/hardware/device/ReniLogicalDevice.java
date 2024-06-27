@@ -2,8 +2,10 @@ package tfc.renirol.frontend.hardware.device;
 
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
-import tfc.renirol.backend.vk.util.VkUtil;
-import tfc.renirol.frontend.rendering.ReniQueue;
+import tfc.renirol.frontend.hardware.device.queue.FamilyName;
+import tfc.renirol.frontend.hardware.device.queue.ReniQueue;
+import tfc.renirol.frontend.hardware.device.queue.ReniQueueFamily;
+import tfc.renirol.frontend.hardware.util.QueueRequest;
 import tfc.renirol.itf.ReniTaggable;
 
 import java.nio.ByteBuffer;
@@ -17,20 +19,17 @@ import static org.lwjgl.vulkan.VK10.VK_OBJECT_TYPE_DEVICE;
 public class ReniLogicalDevice implements ReniTaggable<ReniLogicalDevice> {
     private final VkDevice direct;
     public final ReniHardwareDevice hardware;
-    protected final HashMap<ReniQueueType, Integer> standardIndices;
-    protected final HashMap<ReniQueueType, ReniQueue> queues = new HashMap<>();
     protected final HashSet<String> enabledExt;
+    HashMap<FamilyName, ReniQueueFamily> families = new HashMap<>();
 
-    public ReniLogicalDevice(HashMap<ReniQueueType, Integer> standardIndices, VkDevice direct, ReniHardwareDevice hardware, HashSet<String> enabledExt) {
-        this.standardIndices = standardIndices;
+    public ReniLogicalDevice(List<QueueRequest.QueueInfo> chosen, VkDevice direct, ReniHardwareDevice hardware, HashSet<String> enabledExt) {
         this.direct = direct;
         this.hardware = hardware;
-        standardIndices.forEach((k, v) -> {
-            queues.put(k, VkUtil.get(
-                    (buf) -> VK10.nvkGetDeviceQueue(direct, v, 0, buf.address()),
-                    (handle) -> new ReniQueue(this, new VkQueue(handle, direct))
-            ));
-        });
+        for (QueueRequest.QueueInfo queueInfo : chosen) {
+            families.put(new FamilyName(queueInfo.types()),
+                    ReniQueueFamily.create(this, direct, queueInfo)
+            );
+        }
         this.enabledExt = enabledExt;
     }
 
@@ -39,7 +38,12 @@ public class ReniLogicalDevice implements ReniTaggable<ReniLogicalDevice> {
     }
 
     public ReniQueue getStandardQueue(ReniQueueType type) {
-        return queues.get(type);
+        for (ReniQueueFamily value : families.values()) {
+            if (value.types.contains(type)) {
+                return value.queues.get(0);
+            }
+        }
+        return null;
     }
 
     // generic to avoid class loading/compilation issues
@@ -51,8 +55,21 @@ public class ReniLogicalDevice implements ReniTaggable<ReniLogicalDevice> {
         VK10.nvkDestroyDevice(direct, 0);
     }
 
-    public int getQueueFamily(ReniQueueType queueType) {
-        return standardIndices.get(queueType);
+    public int getQueueFamilyIndex(ReniQueueType type) {
+        for (ReniQueueFamily value : families.values()) {
+            if (value.types.contains(type)) {
+                return value.family;
+            }
+        }
+        return -1;
+    }
+
+    public int getQueueFamilyIndex(FamilyName name) {
+        return families.get(name).family;
+    }
+
+    public ReniQueueFamily getQueueFamily(FamilyName name) {
+        return families.get(name);
     }
 
     public void await() {

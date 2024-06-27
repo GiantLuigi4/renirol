@@ -94,8 +94,8 @@ public class SwapChain implements ReniDestructable {
 
             // sharing
             int graphics, transfer;
-            graphics = device.getQueueFamily(ReniQueueType.GRAPHICS);
-            transfer = device.getQueueFamily(ReniQueueType.TRANSFER);
+            graphics = device.getQueueFamilyIndex(ReniQueueType.GRAPHICS);
+            transfer = device.getQueueFamilyIndex(ReniQueueType.TRANSFER);
 
             IntBuffer indicesBuf = null;
 
