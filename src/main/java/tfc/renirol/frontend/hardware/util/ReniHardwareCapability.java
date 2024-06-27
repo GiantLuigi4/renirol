@@ -32,9 +32,9 @@ public class ReniHardwareCapability {
             return new ReniHardwareCapability(device -> {
                 ArrayList<Integer> all = new ArrayList<>();
                 for (ReniQueueType index : indices)
-                    all.addAll(device.getQueueInformation(index));
+                    all.addAll(device.getQueues(index));
                 for (ReniQueueType index : indices)
-                    all.retainAll(device.getQueueInformation(index));
+                    all.retainAll(device.getQueues(index));
                 return !all.isEmpty();
             });
         }
@@ -43,7 +43,7 @@ public class ReniHardwareCapability {
         public static ReniHardwareCapability configured(ReniQueueType... indices) {
             return new ReniHardwareCapability(device -> {
                 for (ReniQueueType index : indices) {
-                    if (device.getQueueInformation(index).isEmpty())
+                    if (device.getQueues(index).isEmpty())
                         return false;
                 }
                 return true;

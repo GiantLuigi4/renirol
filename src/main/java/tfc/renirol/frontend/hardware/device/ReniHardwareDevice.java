@@ -30,10 +30,24 @@ public class ReniHardwareDevice {
     public final ReniDeviceFeatures features;
 
     private final HashMap<ReniQueueType, ReadOnlyList<Integer>> queueInformation = new HashMap<>();
+    private final ArrayList<QueueFamilyDescriptor> allQueues = new ArrayList<>();
+    private final ReadOnlyList<QueueFamilyDescriptor> queuesReadonly = new ReadOnlyList<>(allQueues);
 
     // generic to avoid class loading/compilation issues
     public <T> T getDirect(Class<T> type) {
         return (T) direct;
+    }
+
+    public static class QueueFamilyDescriptor {
+        public final int index;
+        public final int flags;
+        public final int count;
+
+        public QueueFamilyDescriptor(int index, int flags, int count) {
+            this.index = index;
+            this.flags = flags;
+            this.count = count;
+        }
     }
 
     public ReniHardwareDevice(VkPhysicalDevice direct) {
@@ -112,7 +126,7 @@ public class ReniHardwareDevice {
         return driver;
     }
 
-    public ReadOnlyList<Integer> getQueueInformation(ReniQueueType type) {
+    protected void checkQueues() {
         if (queueInformation.isEmpty()) {
             IntBuffer queueFamilyCount = MemoryUtil.memAllocInt(1);
             VK10.vkGetPhysicalDeviceQueueFamilyProperties(direct, queueFamilyCount, null);
@@ -128,6 +142,10 @@ public class ReniHardwareDevice {
             int[] index = new int[]{0};
             VkUtil.iterate(pb,
                     (family) -> {
+                        allQueues.add(new QueueFamilyDescriptor(
+                                index[0], family.queueFlags(),
+                                family.queueCount()
+                        ));
                         for (ReniQueueType value : ReniQueueType.values()) {
                             if (value.isApplicable(family.queueFlags())) {
                                 queueChannels.get(value).add(index[0]);
@@ -139,8 +157,16 @@ public class ReniHardwareDevice {
 
             queueChannels.forEach((k, v) -> queueInformation.put(k, new ReadOnlyList<>(v)));
         }
+    }
 
+    public ReadOnlyList<Integer> getQueues(ReniQueueType type) {
+        checkQueues();
         return queueInformation.get(type);
+    }
+
+    public ReadOnlyList<QueueFamilyDescriptor> getQueues() {
+        checkQueues();
+        return queuesReadonly;
     }
 
     public boolean supports(ReniHardwareCapability capability) {
@@ -183,9 +209,8 @@ public class ReniHardwareDevice {
             if (queueCreateInfo != null)
                 return this;
 
-            request.prepare(ReniHardwareDevice.this, (type) -> new ArrayList<>(ReniHardwareDevice.this.getQueueInformation(type)));
+            request.prepare(ReniHardwareDevice.this, (type) -> new ArrayList<>(ReniHardwareDevice.this.getQueues(type)));
             chosen = request.select();
-            System.out.println(chosen);
 
             HashSet<QueueRequest.QueueInfo> UNIQUE = new HashSet<>();
             for (QueueRequest.QueueInfo queueInfo : chosen) {

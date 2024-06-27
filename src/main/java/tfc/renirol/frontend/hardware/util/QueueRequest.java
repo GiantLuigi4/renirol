@@ -67,7 +67,12 @@ public abstract class QueueRequest {
                     if (ints.isEmpty())
                         ints = infs;
                 }
-                combos.addAll(ints);
+                if (ints.getFirst().isEmpty()) {
+                    // invalid request
+                    options = new ArrayList<>();
+                    return;
+                }
+                combos.add(ints.getFirst());
             }
 
             if (combos.size() > 2)
@@ -159,24 +164,19 @@ public abstract class QueueRequest {
         @Override
         public void prepare(ReniHardwareDevice hardware, Function<ReniQueueType, List<Integer>> queues) {
             List<QueueInfo> ints = new ArrayList<>();
-            for (Integer i : queues.apply(types[0])) {
+            lDescs:
+            for (ReniHardwareDevice.QueueFamilyDescriptor queue : hardware.getQueues()) {
+                for (ReniQueueType type : types) {
+                    if (!type.isApplicable(queue.flags))
+                        continue lDescs;
+                }
+
                 ints.add(new QueueInfo(
-                        types,
-                        count,
-                        i
+                        types, Math.min(count, queue.count),
+                        queue.index
                 ));
             }
-            for (int i = 1; i < types.length; i++) {
-                List<QueueInfo> ints1 = new ArrayList<>();
-                for (Integer i1 : queues.apply(types[i])) {
-                    ints1.add(new QueueInfo(
-                            types,
-                            count,
-                            i1
-                    ));
-                }
-                ints.retainAll(ints1);
-            }
+            ints.sort((o1, o2) -> -Integer.compare(o1.count, o2.count));
             this.cache = ints;
         }
 
