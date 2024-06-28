@@ -6,6 +6,7 @@ import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.enums.flags.ImageUsage;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
+import tfc.renirol.frontend.hardware.device.queue.ReniQueueFamily;
 import tfc.renirol.frontend.hardware.device.support.image.ReniSwapchainCapabilities;
 import tfc.renirol.frontend.rendering.selectors.FormatSelector;
 import tfc.renirol.itf.ReniDestructable;
@@ -94,8 +95,11 @@ public class SwapChain implements ReniDestructable {
 
             // sharing
             int graphics, transfer;
-            graphics = device.getQueueFamilyIndex(ReniQueueType.GRAPHICS);
-            transfer = device.getQueueFamilyIndex(ReniQueueType.TRANSFER);
+            ReniQueueFamily graphicsFamily = device.getQueueFamily(ReniQueueType.GRAPHICS);
+            graphics = graphicsFamily.family;
+            if (graphicsFamily.hasQueue(ReniQueueType.TRANSFER))
+                transfer = graphicsFamily.family;
+            else transfer = device.getQueueFamilyIndex(ReniQueueType.TRANSFER);
 
             IntBuffer indicesBuf = null;
 

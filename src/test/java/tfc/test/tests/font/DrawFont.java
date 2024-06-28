@@ -8,6 +8,7 @@ import tfc.renirol.frontend.enums.ImageLayout;
 import tfc.renirol.frontend.enums.Operation;
 import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
+import tfc.renirol.frontend.hardware.device.queue.ReniQueue;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
 import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
@@ -90,6 +91,8 @@ public class DrawFont {
         state.constantBuffer(VK13.VK_SHADER_STAGE_VERTEX_BIT, 4);
         GraphicsPipeline pipeline0 = new GraphicsPipeline(pass, state, VERT, FRAG);
 
+        ReniQueue queue = ReniSetup.GRAPHICS_CONTEXT.getLogical().getStandardQueue(ReniQueueType.GRAPHICS);
+
         try {
             ReniSetup.WINDOW.grabContext();
             final CommandBuffer buffer = CommandBuffer.create(
@@ -129,8 +132,7 @@ public class DrawFont {
 
                 buffer.end();
 
-                ReniSetup.GRAPHICS_CONTEXT.submitFrame(buffer);
-                ReniSetup.GRAPHICS_CONTEXT.getLogical().getStandardQueue(ReniQueueType.GRAPHICS).await();
+                ReniSetup.GRAPHICS_CONTEXT.submitFrame(queue, buffer);
 
                 ReniSetup.WINDOW.swapAndPollSize();
                 GLFWWindow.poll();

@@ -12,6 +12,7 @@ import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.hardware.device.ReniHardwareDevice;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
+import tfc.renirol.frontend.hardware.device.queue.ReniQueue;
 import tfc.renirol.frontend.hardware.util.DeviceQuery;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.fencing.Fence;
@@ -176,6 +177,13 @@ public class ReniContext implements ReniDestructable {
     Fence fenceA;
     Semaphore semaphoreB;
 
+    ReniQueue swapQueue;
+
+    public ReniContext setSwapQueue(ReniQueue swapQueue) {
+        this.swapQueue = swapQueue;
+        return this;
+    }
+
     /**
      * Presents the current frame to the window
      *
@@ -183,6 +191,10 @@ public class ReniContext implements ReniDestructable {
      * @return whether internal buffers had to be resized
      */
     public boolean swapBuffers(GenericWindow handle) {
+        return swapBuffers(swapQueue, handle);
+    }
+
+    public boolean swapBuffers(ReniQueue queue, GenericWindow handle) {
         // glfwSwapBuffers for OpenGL
 
         LongBuffer buffer1 = MemoryUtil.memAllocLong(1);
@@ -199,7 +211,7 @@ public class ReniContext implements ReniDestructable {
         presentInfo.pImageIndices(indices);
         presentInfo.pWaitSemaphores(semaphores);
         if (checkResize(
-                KHRSwapchain.nvkQueuePresentKHR(logical.getStandardQueue(ReniQueueType.TRANSFER).getDirect(VkQueue.class), presentInfo.address()),
+                KHRSwapchain.nvkQueuePresentKHR(queue.getDirect(VkQueue.class), presentInfo.address()),
                 handle
         )) return true;
 
@@ -229,6 +241,7 @@ public class ReniContext implements ReniDestructable {
 
     public void withLogical(ReniLogicalDevice reniLogicalDevice) {
         this.logical = reniLogicalDevice;
+        this.swapQueue = logical.getStandardQueue(ReniQueueType.TRANSFER);
     }
 
     public void destroy() {
@@ -272,7 +285,7 @@ public class ReniContext implements ReniDestructable {
 
     private boolean checkResize(int result, GenericWindow window) {
         if (
-                // if the swapchain is out of date, then its size must be updated
+            // if the swapchain is out of date, then its size must be updated
                 result == KHRSwapchain.VK_ERROR_OUT_OF_DATE_KHR ||
                         // if the window's size has changed, the buffers must be resized
                         // reason: AMD doesn't report that the swapchain is out of date, so I need to track that manually
@@ -309,9 +322,9 @@ public class ReniContext implements ReniDestructable {
         return fenceA;
     }
 
-    public void submitFrame(CommandBuffer buffer) {
+    public void submitFrame(ReniQueue queue, CommandBuffer buffer) {
         buffer.submitAsync(
-                getLogical().getStandardQueue(ReniQueueType.GRAPHICS),
+                queue,
                 // TODO: look at later
                 // https://themaister.net/blog/2019/08/14/yet-another-blog-explaining-vulkan-synchronization/
                 VK13.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
@@ -321,6 +334,7 @@ public class ReniContext implements ReniDestructable {
         );
         getFenceImage().await();
         getFenceImage().reset();
+        queue.await();
     }
 
     public SwapchainImage getFramebuffer() {

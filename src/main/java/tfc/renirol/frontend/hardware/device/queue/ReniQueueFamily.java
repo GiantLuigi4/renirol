@@ -42,4 +42,11 @@ public class ReniQueueFamily {
                 queueInfo.index()
         );
     }
+
+    public boolean hasQueue(ReniQueueType reniQueueType) {
+        for (ReniQueueType type : types)
+            if (type == reniQueueType)
+                return true;
+        return false;
+    }
 }

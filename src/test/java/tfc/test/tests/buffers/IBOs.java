@@ -11,6 +11,7 @@ import tfc.renirol.frontend.enums.Operation;
 import tfc.renirol.frontend.enums.format.AttributeFormat;
 import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
+import tfc.renirol.frontend.hardware.device.queue.ReniQueue;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
 import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
@@ -89,6 +90,8 @@ public class IBOs {
         ibo.upload(0, indices);
         MemoryUtil.memFree(indices);
 
+        ReniQueue queue = ReniSetup.GRAPHICS_CONTEXT.getLogical().getStandardQueue(ReniQueueType.GRAPHICS);
+
         try {
             int frame = 0;
 
@@ -154,8 +157,7 @@ public class IBOs {
 
                 buffer.end();
 
-                ReniSetup.GRAPHICS_CONTEXT.submitFrame(buffer);
-                ReniSetup.GRAPHICS_CONTEXT.getLogical().getStandardQueue(ReniQueueType.GRAPHICS).await();
+                ReniSetup.GRAPHICS_CONTEXT.submitFrame(queue, buffer);
 
                 ReniSetup.WINDOW.swapAndPollSize();
                 GLFWWindow.poll();

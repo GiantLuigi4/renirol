@@ -222,7 +222,7 @@ public class ReniHardwareDevice {
             for (QueueRequest.QueueInfo i : UNIQUE) {
                 FloatBuffer prior = MemoryUtil.memAllocFloat(i.count());
                 for (int i1 = 0; i1 < i.count(); i1++)
-                    prior.put(i1, i.count() - i1);
+                    prior.put(i1, (i.count() - i1) / (float) i.count());
 
                 VkDeviceQueueCreateInfo info = queueCreateInfo.get(idx);
                 info.sType(VK10.VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO);

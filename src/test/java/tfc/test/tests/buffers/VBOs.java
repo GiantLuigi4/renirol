@@ -8,10 +8,9 @@ import tfc.renirol.frontend.enums.BufferUsage;
 import tfc.renirol.frontend.enums.ImageLayout;
 import tfc.renirol.frontend.enums.Operation;
 import tfc.renirol.frontend.enums.format.AttributeFormat;
-import tfc.renirol.frontend.enums.masks.AccessMask;
 import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
-import tfc.renirol.frontend.enums.masks.StageMask;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
+import tfc.renirol.frontend.hardware.device.queue.ReniQueue;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
 import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
@@ -78,6 +77,8 @@ public class VBOs {
         vbo.allocate();
         ByteBuffer buffer1 = vbo.createByteBuf();
 
+        ReniQueue queue = ReniSetup.GRAPHICS_CONTEXT.getLogical().getStandardQueue(ReniQueueType.GRAPHICS);
+
         try {
             int frame = 0;
 
@@ -140,22 +141,11 @@ public class VBOs {
                 buffer.endPass();
                 buffer.endLabel();
 
-                buffer.transition(
-                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
-                        StageMask.COLOR_ATTACHMENT_OUTPUT,
-                        StageMask.BOTTOM_OF_PIPE,
-                        ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
-                        ImageLayout.PRESENT,
-                        AccessMask.COLOR_WRITE,
-                        AccessMask.NONE
-                );
-
                 ReniSetup.GRAPHICS_CONTEXT.preparePresent(buffer);
 
                 buffer.end();
 
-                ReniSetup.GRAPHICS_CONTEXT.submitFrame(buffer);
-                ReniSetup.GRAPHICS_CONTEXT.getLogical().getStandardQueue(ReniQueueType.GRAPHICS).await();
+                ReniSetup.GRAPHICS_CONTEXT.submitFrame(queue, buffer);
 
                 ReniSetup.WINDOW.swapAndPollSize();
                 GLFWWindow.poll();

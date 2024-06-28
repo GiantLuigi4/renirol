@@ -109,8 +109,10 @@ public class Main {
 
                 buffer.end();
 
-                ReniSetup.GRAPHICS_CONTEXT.submitFrame(buffer);
-                ReniSetup.GRAPHICS_CONTEXT.getLogical().await();
+                ReniSetup.GRAPHICS_CONTEXT.submitFrame(
+                        ReniSetup.GRAPHICS_CONTEXT.getLogical().getStandardQueue(ReniQueueType.GRAPHICS),
+                        buffer
+                );
 
                 ReniSetup.WINDOW.swapAndPollSize();
                 GLFWWindow.poll();

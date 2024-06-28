@@ -98,6 +98,7 @@ public class ReniSetup {
                                 .with(DynamicRendering.INSTANCE)
                 ).create()
         );
+        ReniSetup.GRAPHICS_CONTEXT.setSwapQueue(GRAPHICS_CONTEXT.getLogical().getQueueFamily(ReniQueueType.GRAPHICS).queues.get(0));
         WINDOW.initContext(GRAPHICS_CONTEXT);
     }
 

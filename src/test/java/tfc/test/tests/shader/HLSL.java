@@ -8,9 +8,9 @@ import tfc.renirol.frontend.enums.BufferUsage;
 import tfc.renirol.frontend.enums.ImageLayout;
 import tfc.renirol.frontend.enums.Operation;
 import tfc.renirol.frontend.enums.format.AttributeFormat;
-import tfc.renirol.frontend.enums.masks.AccessMask;
-import tfc.renirol.frontend.enums.masks.StageMask;
+import tfc.renirol.frontend.enums.masks.DynamicStateMasks;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
+import tfc.renirol.frontend.hardware.device.queue.ReniQueue;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
 import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
@@ -65,7 +65,7 @@ public class HLSL {
         );
 
         PipelineState state = new PipelineState(ReniSetup.GRAPHICS_CONTEXT.getLogical());
-        state.dynamicState();
+        state.dynamicState(DynamicStateMasks.SCISSOR, DynamicStateMasks.VIEWPORT);
 
         DataFormat format = VertexFormats.POS4_COLOR4;
 
@@ -81,6 +81,8 @@ public class HLSL {
         GPUBuffer vbo = new GPUBuffer(ReniSetup.GRAPHICS_CONTEXT.getLogical(), desc0, BufferUsage.VERTEX, 6);
         vbo.allocate();
         ByteBuffer buffer1 = vbo.createByteBuf();
+
+        ReniQueue queue = ReniSetup.GRAPHICS_CONTEXT.getLogical().getStandardQueue(ReniQueueType.GRAPHICS);
 
         try {
             int frame = 0;
@@ -127,15 +129,7 @@ public class HLSL {
 
                 buffer.begin();
 
-                buffer.transition(
-                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
-                        StageMask.TOP_OF_PIPE,
-                        StageMask.COLOR_ATTACHMENT_OUTPUT,
-                        ImageLayout.UNDEFINED,
-                        ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
-                        AccessMask.NONE,
-                        AccessMask.COLOR_WRITE
-                );
+                ReniSetup.GRAPHICS_CONTEXT.prepareChain(buffer);
 
                 buffer.startLabel("Main Pass", 0.5f, 0, 0, 0.5f);
                 buffer.beginPass(pass, ReniSetup.GRAPHICS_CONTEXT.getChainBuffer(), ReniSetup.GRAPHICS_CONTEXT.defaultSwapchain().getExtents());
@@ -152,20 +146,11 @@ public class HLSL {
                 buffer.endPass();
                 buffer.endLabel();
 
-                buffer.transition(
-                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
-                        StageMask.COLOR_ATTACHMENT_OUTPUT,
-                        StageMask.BOTTOM_OF_PIPE,
-                        ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
-                        ImageLayout.PRESENT,
-                        AccessMask.COLOR_WRITE,
-                        AccessMask.NONE
-                );
+                ReniSetup.GRAPHICS_CONTEXT.preparePresent(buffer);
 
                 buffer.end();
 
-                ReniSetup.GRAPHICS_CONTEXT.submitFrame(buffer);
-                ReniSetup.GRAPHICS_CONTEXT.getLogical().getStandardQueue(ReniQueueType.GRAPHICS).await();
+                ReniSetup.GRAPHICS_CONTEXT.submitFrame(queue, buffer);
 
                 ReniSetup.WINDOW.swapAndPollSize();
                 GLFWWindow.poll();

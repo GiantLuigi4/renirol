@@ -72,6 +72,15 @@ public class ReniLogicalDevice implements ReniTaggable<ReniLogicalDevice> {
         return families.get(name);
     }
 
+    public ReniQueueFamily getQueueFamily(ReniQueueType type) {
+        for (ReniQueueFamily value : families.values()) {
+            if (value.types.contains(type)) {
+                return value;
+            }
+        }
+        return null;
+    }
+
     public void await() {
         VK13.vkDeviceWaitIdle(direct);
     }

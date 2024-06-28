@@ -16,6 +16,7 @@ import tfc.renirol.frontend.enums.modes.image.FilterMode;
 import tfc.renirol.frontend.enums.modes.image.MipmapMode;
 import tfc.renirol.frontend.enums.modes.image.WrapMode;
 import tfc.renirol.frontend.hardware.device.ReniQueueType;
+import tfc.renirol.frontend.hardware.device.queue.ReniQueue;
 import tfc.renirol.frontend.rendering.command.CommandBuffer;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
 import tfc.renirol.frontend.rendering.command.pipeline.PipelineState;
@@ -150,6 +151,8 @@ public class DepthBuffer {
         } catch (Throwable ignored) {
         }
 
+        ReniQueue queue = ReniSetup.GRAPHICS_CONTEXT.getLogical().getStandardQueue(ReniQueueType.GRAPHICS);
+
         try {
             int frame = 0;
 
@@ -229,8 +232,7 @@ public class DepthBuffer {
 
                 buffer.end();
 
-                ReniSetup.GRAPHICS_CONTEXT.submitFrame(buffer);
-                ReniSetup.GRAPHICS_CONTEXT.getLogical().getStandardQueue(ReniQueueType.GRAPHICS).await();
+                ReniSetup.GRAPHICS_CONTEXT.submitFrame(queue, buffer);
 
                 ReniSetup.WINDOW.swapAndPollSize();
                 GLFWWindow.poll();
