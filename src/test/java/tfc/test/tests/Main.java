@@ -64,7 +64,7 @@ public class Main {
             ReniSetup.WINDOW.grabContext();
             CommandBuffer buffer = CommandBuffer.create(
                     ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                    ReniQueueType.GRAPHICS, true,
+                    ReniSetup.GRAPHICS_CONTEXT.getLogical().getQueueFamily(ReniQueueType.GRAPHICS), true,
                     false
             );
             buffer.clearColor(0, 0, 0, 1);
@@ -75,7 +75,7 @@ public class Main {
                 buffer.begin();
 
                 buffer.transition(
-                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
+                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer(),
                         StageMask.TOP_OF_PIPE,
                         StageMask.COLOR_ATTACHMENT_OUTPUT,
                         ImageLayout.UNDEFINED,
@@ -98,7 +98,7 @@ public class Main {
                 buffer.endLabel();
 
                 buffer.transition(
-                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer().image,
+                        ReniSetup.GRAPHICS_CONTEXT.getFramebuffer(),
                         StageMask.COLOR_ATTACHMENT_OUTPUT,
                         StageMask.BOTTOM_OF_PIPE,
                         ImageLayout.COLOR_ATTACHMENT_OPTIMAL,

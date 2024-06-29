@@ -6,6 +6,7 @@ import org.lwjgl.vulkan.VkPipelineLayoutCreateInfo;
 import org.lwjgl.vulkan.VkPushConstantRange;
 import tfc.renirol.backend.vk.util.VkUtil;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
+import tfc.renirol.frontend.rendering.resource.descriptor.DescriptorLayout;
 import tfc.renirol.itf.ReniDestructable;
 
 import java.nio.LongBuffer;
@@ -22,10 +23,11 @@ public class ComputePipelineState implements ReniDestructable {
     @Override
     public void destroy() {
         pipelineLayoutInfo.free();
-        MemoryUtil.memFree(layoutDescBuffer);
+        MemoryUtil.memFree(setBuffer);
         for (VkPushConstantRange vkPushConstantRange : push_constant)
             vkPushConstantRange.free();
-        constBuf.free();
+        if (constBuf != null)
+            constBuf.free();
     }
 
     public ComputePipelineState(ReniLogicalDevice device) {
@@ -37,8 +39,6 @@ public class ComputePipelineState implements ReniDestructable {
         pipelineLayoutInfo.pSetLayouts(null);
         pipelineLayoutInfo.pPushConstantRanges(null);
     }
-
-    LongBuffer layoutDescBuffer = MemoryUtil.memAllocLong(1);
 
     ArrayList<VkPushConstantRange> push_constant = new ArrayList<>();
     VkPushConstantRange.Buffer constBuf;
@@ -59,16 +59,17 @@ public class ComputePipelineState implements ReniDestructable {
         return this;
     }
 
-    public ComputePipelineState setLayoutDesc(long desc) {
-        layoutDescBuffer.put(0, desc);
-        pipelineLayoutInfo.setLayoutCount(1);
-        pipelineLayoutInfo.pSetLayouts(layoutDescBuffer);
-        return this;
-    }
+    LongBuffer setBuffer;
 
-    public ComputePipelineState removeLayoutDesc() {
-        pipelineLayoutInfo.setLayoutCount(0);
-        pipelineLayoutInfo.pSetLayouts(null);
+    public ComputePipelineState descriptorLayouts(DescriptorLayout... layouts) {
+        if (setBuffer != null) MemoryUtil.memFree(setBuffer);
+
+        setBuffer = MemoryUtil.memAllocLong(layouts.length);
+        for (int i = 0; i < layouts.length; i++)
+            setBuffer.put(i, layouts[i].handle);
+
+        pipelineLayoutInfo.setLayoutCount(layouts.length);
+        pipelineLayoutInfo.pSetLayouts(setBuffer);
         return this;
     }
 

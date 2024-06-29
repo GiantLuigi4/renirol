@@ -142,14 +142,14 @@ public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image>
 
         // TODO: is this necessary?
         CommandBuffer cmd = CommandBuffer.create(
-                logical, ReniQueueType.GRAPHICS,
+                logical, logical.getQueueFamily(ReniQueueType.GRAPHICS),
                 true, false, true
         );
         cmd.begin();
         switch (usages[0]) {
             case COLOR -> {
                 cmd.transition(
-                        handle,
+                        this,
                         StageMask.TOP_OF_PIPE, StageMask.GRAPHICS,
                         ImageLayout.UNDEFINED, ImageLayout.COLOR_ATTACHMENT_OPTIMAL,
                         AccessMask.NONE, AccessMask.COLOR_READ
@@ -157,7 +157,7 @@ public class Image implements ReniDestructable, ImageBacked, ReniTaggable<Image>
             }
             case DEPTH -> {
                 cmd.transition(
-                        handle,
+                        this,
                         usages[0],
                         StageMask.TOP_OF_PIPE, StageMask.FRAGMENT_TEST,
                         ImageLayout.UNDEFINED, ImageLayout.DEPTH_STENCIL_ATTACHMENT_OPTIMAL

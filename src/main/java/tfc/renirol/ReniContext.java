@@ -96,7 +96,12 @@ public class ReniContext implements ReniDestructable {
         else pb = MemoryUtil.memAllocPointer(0);
 
         PointerBuffer collected = MemoryUtil.memAllocPointer(pb.capacity() + extensions.size());
-        for (int i = 0; i < pb.capacity(); i++) collected.put(i, pb.get(i));
+        for (int i = 0; i < pb.capacity(); i++) {
+            collected.put(i, pb.get(i));
+            System.out.println(MemoryUtil.memUTF8(
+                    pb.get(i)
+            ));
+        }
         if (!extensions.isEmpty()) {
             for (int i = 0; i < extensions.size(); i++) {
                 collected.put(pb.capacity() + i, MemoryUtil.memUTF8(extensions.get(i)));
@@ -370,7 +375,7 @@ public class ReniContext implements ReniDestructable {
         for (Attachment attachment : this.buffer) {
             if (attachment.isDepth) {
                 buffer.transition(
-                        attachment.image.getHandle(),
+                        attachment.image,
                         StageMask.TOP_OF_PIPE,
                         StageMask.FRAGMENT_TEST,
                         ImageLayout.UNDEFINED,
@@ -381,7 +386,7 @@ public class ReniContext implements ReniDestructable {
                 );
             } else {
                 buffer.transition(
-                        attachment.image.getHandle(),
+                        attachment.image,
                         StageMask.TOP_OF_PIPE,
                         StageMask.COLOR_ATTACHMENT_OUTPUT,
                         ImageLayout.UNDEFINED,
@@ -395,7 +400,7 @@ public class ReniContext implements ReniDestructable {
 
     public void preparePresent(CommandBuffer buffer) {
         buffer.transition(
-                getFramebuffer().image,
+                getFramebuffer(),
                 StageMask.COLOR_ATTACHMENT_OUTPUT,
                 StageMask.BOTTOM_OF_PIPE,
                 ImageLayout.COLOR_ATTACHMENT_OPTIMAL,

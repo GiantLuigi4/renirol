@@ -19,6 +19,7 @@ import tfc.renirol.frontend.rendering.resource.image.texture.Texture;
 import tfc.renirol.frontend.rendering.resource.image.texture.TextureSampler;
 import tfc.renirol.frontend.reni.font.ReniGlyph;
 import tfc.renirol.util.reni.ImageUtil;
+import tfc.test.shared.ReniSetup;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -69,13 +70,14 @@ public class Atlas {
         img.setName("Atlas Image");
 
         buffer = CommandBuffer.create(
-                logicalDevice, ReniQueueType.GRAPHICS,
+                logicalDevice,
+                ReniSetup.GRAPHICS_CONTEXT.getLogical().getQueueFamily(ReniQueueType.GRAPHICS),
                 true, false
         ).setName("Atlas Merge Commands");
 
         buffer.begin();
         buffer.transition(
-                img.getHandle(),
+                img,
                 StageMask.TOP_OF_PIPE, StageMask.GRAPHICS,
                 ImageLayout.UNDEFINED, ImageLayout.SHADER_READONLY,
                 AccessMask.NONE, AccessMask.SHADER_READ
@@ -201,7 +203,7 @@ public class Atlas {
     public void beginModifications() {
         buffer.begin();
         buffer.transition(
-                img.getHandle(), StageMask.GRAPHICS, StageMask.COLOR_ATTACHMENT_OUTPUT,
+                img, StageMask.GRAPHICS, StageMask.COLOR_ATTACHMENT_OUTPUT,
                 ImageLayout.SHADER_READONLY, ImageLayout.TRANSFER_DST_OPTIMAL,
                 AccessMask.SHADER_READ, AccessMask.TRANSFER_WRITE
         );
@@ -209,7 +211,7 @@ public class Atlas {
 
     public void submit() {
         buffer.transition(
-                img.getHandle(),
+                img,
                 StageMask.COLOR_ATTACHMENT_OUTPUT, StageMask.GRAPHICS,
                 ImageLayout.TRANSFER_DST_OPTIMAL, ImageLayout.SHADER_READONLY,
                 AccessMask.TRANSFER_WRITE, AccessMask.SHADER_READ

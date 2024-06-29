@@ -142,7 +142,7 @@ class Bindless {
             ReniSetup.WINDOW.grabContext();
             final CommandBuffer buffer = CommandBuffer.create(
                     ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                    ReniQueueType.GRAPHICS, true,
+                    ReniSetup.GRAPHICS_CONTEXT.getLogical().getQueueFamily(ReniQueueType.GRAPHICS), true,
                     false
             );
             buffer.clearColor(0, 0, 0, 1);

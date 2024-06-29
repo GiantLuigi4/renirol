@@ -149,7 +149,7 @@ public class Texture implements ReniDestructable, ImageBacked, ReniTaggable<Text
         allocInfo.free();
 
         CommandBuffer buffer = CommandBuffer.create(
-                device, ReniQueueType.GRAPHICS,
+                device, device.getQueueFamily(ReniQueueType.GRAPHICS),
                 true, false,
                 false
         );
@@ -168,7 +168,7 @@ public class Texture implements ReniDestructable, ImageBacked, ReniTaggable<Text
             buffer.begin();
             buffer.startLabel("upload", 0, 0, 0.5f, 0.5f);
             buffer.transition(
-                    handle, StageMask.TOP_OF_PIPE, StageMask.TRANSFER,
+                    this, StageMask.TOP_OF_PIPE, StageMask.TRANSFER,
                     ImageLayout.UNDEFINED, ImageLayout.TRANSFER_DST_OPTIMAL,
                     AccessMask.NONE, AccessMask.TRANSFER_WRITE
             );
@@ -179,7 +179,7 @@ public class Texture implements ReniDestructable, ImageBacked, ReniTaggable<Text
                     inf
             );
             buffer.transition(
-                    handle, StageMask.TRANSFER, StageMask.GRAPHICS, // TODO: more optimal stage?
+                    this, StageMask.TRANSFER, StageMask.GRAPHICS, // TODO: more optimal stage?
                     ImageLayout.TRANSFER_DST_OPTIMAL, layout == null ? ImageLayout.SHADER_READONLY : layout,
                     AccessMask.TRANSFER_WRITE, AccessMask.COLOR_READ
             );

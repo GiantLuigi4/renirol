@@ -2,6 +2,7 @@ package tfc.renirol.frontend.windowing.glfw;
 
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
+import org.lwjgl.system.Configuration;
 
 public class Setup {
     public static void genericSetup() {
@@ -47,5 +48,10 @@ public class Setup {
 
     public static void noAPI() {
         GLFW.glfwWindowHint(GLFW.GLFW_CLIENT_API, GLFW.GLFW_NO_API);
+    }
+
+    public static void lwjglPerformanceSetup() {
+        Configuration.DISABLE_CHECKS.set(true);
+        Configuration.DISABLE_FUNCTION_CHECKS.set(true);
     }
 }

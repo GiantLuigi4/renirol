@@ -165,13 +165,13 @@ public class TextRenderer implements ReniDestructable {
             cmd.endPass();
 
             k.set.bind(0, 0, DescriptorType.COMBINED_SAMPLED_IMAGE, k.info);
-            cmd.bufferBarrier(
+            cmd.transitionBuffer(
                     draw,
                     StageMask.GRAPHICS, StageMask.TRANSFER,
                     AccessMask.VERTEX_READ, AccessMask.TRANSFER_WRITE
             );
             cmd.bufferData(draw, 0, v.limit(), v.position(0));
-            cmd.bufferBarrier(
+            cmd.transitionBuffer(
                     draw,
                     StageMask.TRANSFER, StageMask.GRAPHICS,
                     AccessMask.TRANSFER_WRITE, AccessMask.VERTEX_READ

@@ -97,7 +97,7 @@ public class DrawFont {
             ReniSetup.WINDOW.grabContext();
             final CommandBuffer buffer = CommandBuffer.create(
                     ReniSetup.GRAPHICS_CONTEXT.getLogical(),
-                    ReniQueueType.GRAPHICS, true,
+                    ReniSetup.GRAPHICS_CONTEXT.getLogical().getQueueFamily(ReniQueueType.GRAPHICS), true,
                     false
             ).setName("Main Command Buffer");
 

@@ -21,7 +21,7 @@ public class ComputePipeline implements ReniDestructable {
             Shader shader
     ) {
         layout = state.create();
-        this.device = logical.hardware.getDirect(VkDevice.class);
+        this.device = logical.getDirect(VkDevice.class);
         VkComputePipelineCreateInfo.Buffer pipelineInfo = VkComputePipelineCreateInfo.calloc(1);
         pipelineInfo.sType(VK13.VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO);
         pipelineInfo.layout(layout.handle);

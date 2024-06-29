@@ -25,6 +25,7 @@ public class ReniSetup {
     static {
         System.out.println(ProcessHandle.current().pid());
         Setup.performanceSetup();
+        Setup.lwjglPerformanceSetup();
 //        if (Scenario.useRenderDoc) Setup.loadRenderdoc();
         if (!Renirol.BACKEND.equals("OpenGL"))
             Setup.noAPI();

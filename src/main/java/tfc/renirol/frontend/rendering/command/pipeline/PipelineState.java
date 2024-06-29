@@ -42,7 +42,6 @@ public class PipelineState implements ReniDestructable {
         dynamic.free();
         vertexInputInfo.free();
         inputAssembly.free();
-        viewportState.free();
         scissor.free();
         offset2D.free();
         extents.free();
@@ -56,11 +55,16 @@ public class PipelineState implements ReniDestructable {
         tessellationState.free();
         for (VkPushConstantRange vkPushConstantRange : push_constant)
             vkPushConstantRange.free();
-        constBuf.free();
-        MemoryUtil.memFree(dynamicBuffer);
-        bindings.free();
-        attribs.free();
-        MemoryUtil.memFree(setBuffer);
+        if (constBuf != null)
+            constBuf.free();
+        if (dynamicBuffer != null)
+            MemoryUtil.memFree(dynamicBuffer);
+        if (bindings != null)
+            bindings.free();
+        if (attribs != null)
+            attribs.free();
+        if (setBuffer != null)
+            MemoryUtil.memFree(setBuffer);
     }
 
     public PipelineState(ReniLogicalDevice device) {
