@@ -241,13 +241,21 @@ public class PipelineState implements ReniDestructable {
         push_constant.size(size);
         push_constant.stageFlags(stage);
 
-        if (constBuf != null) MemoryUtil.memFree(constBuf);
+//        if (constBuf != null) MemoryUtil.memFree(constBuf);
         constBuf = VkPushConstantRange.malloc(this.push_constant.size());
         for (int i = 0; i < this.push_constant.size(); i++) {
             constBuf.put(i, this.push_constant.get(i));
         }
         pipelineLayoutInfo.pPushConstantRanges(constBuf);
         return this;
+    }
+
+    public void clearConstant() {
+        for (VkPushConstantRange vkPushConstantRange : push_constant)
+            vkPushConstantRange.free();
+        MemoryUtil.memFree(constBuf);
+        push_constant.clear();
+        pipelineLayoutInfo.pPushConstantRanges(null);
     }
 
     public PipelineLayout create() {

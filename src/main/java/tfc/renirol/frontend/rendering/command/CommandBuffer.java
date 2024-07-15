@@ -18,7 +18,7 @@ import tfc.renirol.frontend.enums.modes.PrimitiveType;
 import tfc.renirol.frontend.hardware.device.ReniLogicalDevice;
 import tfc.renirol.frontend.hardware.device.queue.ReniQueue;
 import tfc.renirol.frontend.hardware.device.queue.ReniQueueFamily;
-import tfc.renirol.frontend.rendering.command.bsrrier.ImageBarrier;
+import tfc.renirol.frontend.rendering.command.barrier.ImageBarrier;
 import tfc.renirol.frontend.rendering.command.pipeline.ComputePipeline;
 import tfc.renirol.frontend.rendering.command.pipeline.GraphicsPipeline;
 import tfc.renirol.frontend.rendering.debug.DebugMarker;

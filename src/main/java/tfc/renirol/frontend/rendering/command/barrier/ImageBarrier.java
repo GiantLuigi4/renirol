@@ -1,4 +1,4 @@
-package tfc.renirol.frontend.rendering.command.bsrrier;
+package tfc.renirol.frontend.rendering.command.barrier;
 
 import org.lwjgl.vulkan.VK13;
 import org.lwjgl.vulkan.VkImageMemoryBarrier;
