@@ -52,6 +52,7 @@ import static org.lwjgl.vulkan.VK10.*;
  * On VK:
  *      this represents a VkCommandBuffer
  */
+// TODO: automatically select between KHR and normal variants based on hardware support
 public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuffer> {
     final VkDevice device;
     final boolean ownPool;
@@ -200,7 +201,7 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
     }
 
     public void endPass() {
-        VK13.vkCmdEndRendering(cmd);
+        KHRDynamicRendering.vkCmdEndRenderingKHR(cmd);
     }
 
     public void cullMode(CullMode mode) {
@@ -327,7 +328,7 @@ public class CommandBuffer implements ReniDestructable, ReniTaggable<CommandBuff
         info.pColorAttachments(buffer1);
         info.layerCount(1);
 
-        VK13.nvkCmdBeginRendering(
+        KHRDynamicRendering.nvkCmdBeginRenderingKHR(
                 cmd, info.address()
         );
 

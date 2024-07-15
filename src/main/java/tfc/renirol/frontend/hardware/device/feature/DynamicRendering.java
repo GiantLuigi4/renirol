@@ -1,5 +1,6 @@
 package tfc.renirol.frontend.hardware.device.feature;
 
+import org.lwjgl.vulkan.KHRDynamicRendering;
 import org.lwjgl.vulkan.VkDeviceCreateInfo;
 import org.lwjgl.vulkan.VkPhysicalDeviceDynamicRenderingFeatures;
 import tfc.renirol.api.DeviceFeature;
@@ -23,6 +24,8 @@ public class DynamicRendering implements DeviceFeature {
         return new VkFeature() {
             @Override
             public void apply(ReniHardwareDevice device, ReniHardwareDevice.LogicalDeviceBuilder builder, VkDeviceCreateInfo createInfo) {
+                builder.enableIfPossible(KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+
                 VkPhysicalDeviceDynamicRenderingFeatures features = VkPhysicalDeviceDynamicRenderingFeatures.calloc();
                 features.sType$Default().dynamicRendering(true);
                 createInfo.pNext(features);
